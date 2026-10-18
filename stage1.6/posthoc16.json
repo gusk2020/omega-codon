@@ -1,0 +1,215 @@
+{
+ "posthoc": true,
+ "note": "written after the results; exploratory; pooled over seeds 1-30 and 101-130 where stated",
+ "PH1_pooled60_pulsedSelected": {
+  "n": 60,
+  "huntFraction_vs_persistence": {
+   "n": 60,
+   "rho": -0.04854098356111179,
+   "ci95": [
+    -0.3068885599230903,
+    0.2155757294295735
+   ],
+   "p": 0.3404,
+   "alternative": "less"
+  },
+  "preyFractionEarly_vs_persistence": {
+   "n": 60,
+   "rho": 0.24838108120585023,
+   "ci95": [
+    0.007339696040182755,
+    0.4569222069317911
+   ],
+   "p": 0.0304,
+   "alternative": "greater"
+  },
+  "earlyBirthRate400_vs_persistence": {
+   "n": 60,
+   "rho": -0.2714119510943885,
+   "ci95": [
+    -0.48816967710529807,
+    -0.0020973581187876023
+   ],
+   "p": 0.0178,
+   "alternative": "less"
+  },
+  "earlyBirthRate400_vs_preyFractionEarly": {
+   "n": 60,
+   "rho": -0.767657682689636,
+   "ci95": [
+    -0.8530523740687201,
+    -0.6317970683948488
+   ],
+   "p": 0.0002,
+   "alternative": "two-sided"
+  },
+  "huntFraction_vs_preyFractionEarly": {
+   "n": 60,
+   "rho": -0.405390386218394,
+   "ci95": [
+    -0.6182637228185307,
+    -0.14676679182311222
+   ],
+   "p": 0.0018,
+   "alternative": "two-sided"
+  },
+  "extinctRuns": 21,
+  "warning": "preyFractionMin is NOT used: a minimum over a longer run is lower by construction, so it is confounded with run length."
+ },
+ "PH2_memoryLearn_vsDrift_pooled60": {
+  "fullCost": {
+   "n": 60,
+   "meanDiff": -0.0348485179600678,
+   "ci95": [
+    -0.04157468033910588,
+    -0.02852368591235936
+   ],
+   "dz": -1.3661656926091903,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 5,
+   "negative": 55,
+   "droppedPairs": 0
+  },
+  "costFree": {
+   "n": 60,
+   "meanDiff": -0.014814807064731927,
+   "ci95": [
+    -0.022869651080876303,
+    -0.007000438639916209
+   ],
+   "dz": -0.47866612481745735,
+   "p": 0.0002999850007499625,
+   "alternative": "two-sided",
+   "positive": 17,
+   "negative": 43,
+   "droppedPairs": 0
+  },
+  "benefitFree": {
+   "n": 60,
+   "meanDiff": -0.03251048853911832,
+   "ci95": [
+    -0.039871081930831546,
+    -0.025174935015801488
+   ],
+   "dz": -1.1311350249184169,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 7,
+   "negative": 53,
+   "droppedPairs": 0
+  }
+ },
+ "PH3_breakEvenCost": {
+  "stable": {
+   "winRate": {
+    "0": 0.5166666666666667,
+    "0.001": 0.05,
+    "0.002": 0,
+    "0.004": 0
+   },
+   "costAtWinRateHalf": 0.000035714285714285825,
+   "n": 60
+  },
+  "p20": {
+   "winRate": {
+    "0": 0.85,
+    "0.001": 0.6166666666666667,
+    "0.002": 0.26666666666666666,
+    "0.004": 0.05
+   },
+   "costAtWinRateHalf": 0.0013333333333333335,
+   "n": 60
+  },
+  "p40": {
+   "winRate": {
+    "0": 0.85,
+    "0.001": 0.7166666666666667,
+    "0.002": 0.36666666666666664,
+    "0.004": 0.11666666666666667
+   },
+   "costAtWinRateHalf": 0.001619047619047619,
+   "n": 60
+  }
+ },
+ "PH4_survivalByStep": {
+  "E1_S16F4_p20_sel": {
+   "n": 60,
+   "aliveAt2000": 38,
+   "aliveAt4000": 19,
+   "aliveAt6000": 9,
+   "capacityAmongLiveAt6000": {
+    "mean": 4.084492617741971,
+    "sd": 1.410954807226335,
+    "median": 3.605067209107832,
+    "min": 3.0458767229160197,
+    "max": 7.522114602469798,
+    "n": 9
+   }
+  },
+  "E1_S16F4_p20_drift": {
+   "n": 60,
+   "aliveAt2000": 60,
+   "aliveAt4000": 60,
+   "aliveAt6000": 60,
+   "capacityAmongLiveAt6000": {
+    "mean": 3.2765373937330207,
+    "sd": 1.0080308428214393,
+    "median": 3.135034685421493,
+    "min": 1.551963121027487,
+    "max": 6.32954932901667,
+    "n": 60
+   }
+  },
+  "E1_S1F1_p20_sel": {
+   "n": 60,
+   "aliveAt2000": 39,
+   "aliveAt4000": 21,
+   "aliveAt6000": 10,
+   "capacityAmongLiveAt6000": {
+    "mean": 3.0231391896728783,
+    "sd": 0.16752982835355087,
+    "median": 3,
+    "min": 2.6882268594404333,
+    "max": 3.3529268221942794,
+    "n": 10
+   }
+  }
+ },
+ "PH5_refuge_isAlsoSubsidy": {
+  "popMedianBaseline": {
+   "mean": 71.65833333333333,
+   "sd": 11.454216774660063,
+   "median": 68,
+   "min": 53,
+   "max": 100,
+   "n": 60
+  },
+  "popMedianRefuge": {
+   "mean": 417.78333333333336,
+   "sd": 48.523135026174494,
+   "median": 418,
+   "min": 326,
+   "max": 533,
+   "n": 60
+  },
+  "preyShareOfIntake": {
+   "baseline": {
+    "mean": 0.8795830829813205,
+    "sd": 0.0596369623680904,
+    "median": 0.9003797494242181,
+    "min": 0.7267890525381634,
+    "max": 0.9716288501369831,
+    "n": 60
+   },
+   "refuge": {
+    "mean": 0.9267619336076987,
+    "sd": 0.04381218452085844,
+    "median": 0.9270995395921783,
+    "min": 0.8126301185646473,
+    "max": 0.9943068407842428,
+    "n": 60
+   }
+  }
+ }
+}
