@@ -1,0 +1,48 @@
+{
+ "node": "v22.22.0",
+ "emptyNodeMaxRssMB": 40.65625,
+ "runs": [
+  {
+   "env": "rich",
+   "ms": 1754,
+   "peakPopulation": 566,
+   "heapAfterMB": 52.235198974609375,
+   "maxRssMB": 140.65625
+  },
+  {
+   "env": "scarce",
+   "ms": 716,
+   "peakPopulation": 139,
+   "heapAfterMB": 13.442520141601562,
+   "maxRssMB": 109.32421875
+  },
+  {
+   "env": "plague",
+   "ms": 1366,
+   "peakPopulation": 400,
+   "heapAfterMB": 38.55236053466797,
+   "maxRssMB": 125.43359375
+  },
+  {
+   "env": "preyless",
+   "ms": 877,
+   "peakPopulation": 209,
+   "heapAfterMB": 14.52777099609375,
+   "maxRssMB": 122.7890625
+  },
+  {
+   "env": "damageHeavy",
+   "ms": 1248,
+   "peakPopulation": 398,
+   "heapAfterMB": 45.207176208496094,
+   "maxRssMB": 152.203125
+  },
+  {
+   "env": "extremeDisaster",
+   "ms": 911,
+   "peakPopulation": 335,
+   "heapAfterMB": 19.6754150390625,
+   "maxRssMB": 117.625
+  }
+ ]
+}
