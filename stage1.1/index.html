@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オメガ・コドン Stage 1.1</title>
+<style>
+:root{color-scheme:dark;--bg:#0e1620;--panel:#172431;--line:#2b4251;--fg:#eef4f5;--muted:#9eb1bd;--accent:#70d3bc}
+body{margin:0 auto;max-width:820px;padding:16px;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif}
+h1{font-size:1.3rem;margin:.2em 0}.muted{color:var(--muted);font-size:.85rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:.85rem}
+input,select{width:100%;box-sizing:border-box;margin-top:3px;background:#0e1821;border:1px solid #456070;color:var(--fg);border-radius:6px;padding:8px;font:inherit}
+input[type=checkbox]{width:auto}button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--accent);color:#092820;font-weight:700;font-size:1rem}
+canvas{width:100%;height:160px;background:#101c27;border-radius:6px}#stats{line-height:1.6;font-size:.9rem}
+</style>
+</head>
+<body>
+<h1>Ω オメガ・コドン Stage 1.1</h1>
+<p class="muted">進化エンジン検証画面（最小限）。抽象モデルであり実在生物の予測ではありません。</p>
+<section class="panel">
+ <div class="fields">
+  <label>乱数シード<input id="seed" type="number" value="1"></label>
+  <label>ステップ数<input id="steps" type="number" min="1" max="20000" value="2000"></label>
+  <label>環境<select id="environment"></select></label>
+  <label>外因死亡率<input id="mort" type="number" step="0.005" min="0" max="0.5" value="0.01"></label>
+ </div>
+ <p><label><input id="variable" type="checkbox" checked> 環境変動・局所災害あり</label><br>
+ <label><input id="selection" type="checkbox" checked> 自然選択あり（OFF＝遺伝型を発現させない対照）</label><br>
+ <label><input id="interactions" type="checkbox" checked> 遺伝子制御相互作用あり</label></p>
+ <button id="run">実行</button>
+ <p class="muted" id="status">未実行</p>
+</section>
+<section class="panel">
+ <div class="muted">個体数</div><canvas id="c-pop" width="760" height="160"></canvas>
+ <div class="muted">遺伝型形質（緑=修復 橙=繁殖 紫=免疫）</div><canvas id="c-tr" width="760" height="160"></canvas>
+ <div id="stats"></div>
+</section>
+<script src="engine.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+for (const k of Object.keys(OmegaEngine.ENVIRONMENTS)) $('environment').add(new Option(k, k));
+function plot(id, series, max) {
+  const cv = $(id), c = cv.getContext('2d'), w = cv.width, h = cv.height;
+  c.clearRect(0, 0, w, h);
+  for (const [vals, color] of series) {
+    c.strokeStyle = color; c.lineWidth = 2; c.beginPath();
+    vals.forEach((v, i) => { const x = 4 + (w - 8) * i / Math.max(1, vals.length - 1), y = h - 6 - (h - 12) * v / max; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.stroke();
+  }
+  c.fillStyle = '#b6c7cf'; c.font = '12px sans-serif'; c.fillText(String(Math.round(max * 100) / 100), 6, 14);
+}
+$('run').onclick = () => {
+  $('run').disabled = true; $('status').textContent = '計算中…';
+  setTimeout(() => {
+    try {
+      const r = OmegaEngine.simulate({ seed: +$('seed').value, steps: +$('steps').value, environment: $('environment').value,
+        extrinsicMortality: +$('mort').value, variable: $('variable').checked, selection: $('selection').checked, interactions: $('interactions').checked });
+      const h = r.history, pops = h.map((x) => x.population);
+      plot('c-pop', [[pops, '#70d3bc']], Math.max(10, ...pops));
+      plot('c-tr', [[h.map((x) => x.traits[1]), '#70d3bc'], [h.map((x) => x.traits[4]), '#e7b777'], [h.map((x) => x.traits[2]), '#ab9eed']], 1);
+      const s = r.summary;
+      $('stats').textContent = `${r.extinct ? '絶滅（' + r.extinctAt + 'ステップ）' : '存続'}／最終個体数 ${r.finalPopulation}／最大 ${r.peakPopulation}／平均寿命 ${r.meanLifespanAll ? r.meanLifespanAll.toFixed(1) : '-'}／遺伝子数 ${s.meanGenes.toFixed(1)}／制御辺 ${s.meanEdges.toFixed(1)}`;
+      $('status').textContent = `完了 ${r.elapsedMs} ms`;
+    } catch (e) { $('status').textContent = 'エラー: ' + e.message; }
+    $('run').disabled = false;
+  }, 30);
+};
+</script>
+</body>
+</html>
