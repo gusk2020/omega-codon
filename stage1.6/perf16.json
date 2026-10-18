@@ -1,0 +1,76 @@
+{
+ "node": "v22.22.0",
+ "emptyNodeMaxRssMB": 40.65234375,
+ "runs": [
+  {
+   "env": "rich",
+   "ms": 1744,
+   "peakPopulation": 566,
+   "heapAfterMB": 40.16759490966797,
+   "maxRssMB": 156.71484375
+  },
+  {
+   "env": "scarce",
+   "ms": 580,
+   "peakPopulation": 139,
+   "heapAfterMB": 10.792594909667969,
+   "maxRssMB": 118.3125
+  },
+  {
+   "env": "plague",
+   "ms": 1520,
+   "peakPopulation": 400,
+   "heapAfterMB": 32.749755859375,
+   "maxRssMB": 147.9140625
+  },
+  {
+   "env": "preyless",
+   "ms": 754,
+   "peakPopulation": 209,
+   "heapAfterMB": 24.27617645263672,
+   "maxRssMB": 135.8203125
+  },
+  {
+   "env": "damageHeavy",
+   "ms": 1383,
+   "peakPopulation": 398,
+   "heapAfterMB": 33.615081787109375,
+   "maxRssMB": 132.55859375
+  },
+  {
+   "env": "extremeDisaster",
+   "ms": 929,
+   "peakPopulation": 335,
+   "heapAfterMB": 24.556015014648438,
+   "maxRssMB": 128.5546875
+  },
+  {
+   "env": "rich+pulsed",
+   "ms": 657,
+   "peakPopulation": 281,
+   "heapAfterMB": 17.648971557617188,
+   "maxRssMB": 116.29296875
+  },
+  {
+   "env": "rich+memory6",
+   "ms": 1422,
+   "peakPopulation": 522,
+   "heapAfterMB": 21.527862548828125,
+   "maxRssMB": 162.0703125
+  },
+  {
+   "env": "rich+storageLong",
+   "ms": 558,
+   "peakPopulation": 195,
+   "heapAfterMB": 6.059242248535156,
+   "maxRssMB": 123.6875
+  },
+  {
+   "env": "rich+interventions",
+   "ms": 2152,
+   "peakPopulation": 579,
+   "heapAfterMB": 35.609474182128906,
+   "maxRssMB": 153.4296875
+  }
+ ]
+}

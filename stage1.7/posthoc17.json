@@ -1,0 +1,112 @@
+{
+ "posthoc": true,
+ "note": "written after the results; exploratory; pooled seeds 1-30 and 101-130",
+ "PH1_baseSelected_pooled60": {
+  "n": 60,
+  "earlyBirthRate400_vs_preyFractionEarly": {
+   "n": 60,
+   "rho": -0.767657682689636,
+   "ci95": [
+    -0.8530523740687201,
+    -0.6317970683948488
+   ],
+   "p": 0.0002,
+   "alternative": "two-sided"
+  },
+  "preyFractionEarly_vs_persistence": {
+   "n": 60,
+   "rho": 0.24838108120585023,
+   "ci95": [
+    0.007339696040182755,
+    0.4569222069317911
+   ],
+   "p": 0.0636,
+   "alternative": "two-sided"
+  },
+  "earlyBirthRate400_vs_persistence": {
+   "n": 60,
+   "rho": -0.2714119510943885,
+   "ci95": [
+    -0.48816967710529807,
+    -0.0020973581187876023
+   ],
+   "p": 0.039,
+   "alternative": "two-sided"
+  },
+  "huntFraction_vs_persistence": {
+   "n": 60,
+   "rho": -0.04854098356111179,
+   "ci95": [
+    -0.3068885599230903,
+    0.2155757294295735
+   ],
+   "p": 0.708,
+   "alternative": "two-sided"
+  }
+ },
+ "PH2_birthDose_pooled60": {
+  "birth0.25": {
+   "extinct": 35,
+   "n": 60,
+   "popMedian": 29.466666666666665,
+   "lifeMean": 20.13393389053293,
+   "persistence": 1061.25,
+   "preyFractionEarly": 0.8662436392184168,
+   "huntFraction": 0.4946052848201518,
+   "birthsPerIndividualStep": 0.04299044721977319
+  },
+  "birth0.5": {
+   "extinct": 7,
+   "n": 60,
+   "popMedian": 60.95,
+   "lifeMean": 13.07821804874515,
+   "persistence": 1940.5333333333333,
+   "preyFractionEarly": 0.6704698026358779,
+   "huntFraction": 0.6431362622383855,
+   "birthsPerIndividualStep": 0.07582332723597304
+  },
+  "base_sel": {
+   "extinct": 21,
+   "n": 60,
+   "popMedian": 71.65833333333333,
+   "lifeMean": 9.983338278344558,
+   "persistence": 1686.9,
+   "preyFractionEarly": 0.5071300904442604,
+   "huntFraction": 0.5858198404148551,
+   "birthsPerIndividualStep": 0.09940269701237923
+  },
+  "birth2": {
+   "extinct": 32,
+   "n": 60,
+   "popMedian": 84.06666666666666,
+   "lifeMean": 8.185079174955655,
+   "persistence": 1469.8,
+   "preyFractionEarly": 0.4284696011246769,
+   "huntFraction": 0.5393190344017057,
+   "birthsPerIndividualStep": 0.12130971636477848
+  }
+ },
+ "PH3_capture_pooled60": {
+  "capture0.5": {
+   "extinct": 57,
+   "catchesPerIndividualStep": 0.09562085584272761,
+   "preyFractionMean": 0.9447760566790732,
+   "huntFraction": 0.34424606918292416,
+   "popMedian": 19.5
+  },
+  "base_sel": {
+   "extinct": 21,
+   "catchesPerIndividualStep": 0.14315609751915315,
+   "preyFractionMean": 0.4623983392718409,
+   "huntFraction": 0.5858198404148551,
+   "popMedian": 71.65833333333333
+  },
+  "capture2": {
+   "extinct": 12,
+   "catchesPerIndividualStep": 0.13905014633724966,
+   "preyFractionMean": 0.39268896952713084,
+   "huntFraction": 0.5173123694086004,
+   "popMedian": 68.75
+  }
+ }
+}
