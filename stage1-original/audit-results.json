@@ -1,0 +1,46 @@
+[
+  {
+    "changing": false,
+    "interactions": false,
+    "seeds": 30,
+    "initial": 0.21715380999742648,
+    "final": 0.2919215120765289,
+    "delta": 0.07476770207910245,
+    "positiveRuns": 30,
+    "diversity": 0.6313333333333335,
+    "genome": 22.166666666666668
+  },
+  {
+    "changing": false,
+    "interactions": true,
+    "seeds": 30,
+    "initial": 0.22652617186653354,
+    "final": 0.32874229089870177,
+    "delta": 0.10221611903216811,
+    "positiveRuns": 30,
+    "diversity": 0.626,
+    "genome": 21.040000000000003
+  },
+  {
+    "changing": true,
+    "interactions": false,
+    "seeds": 30,
+    "initial": 0.21715380999742648,
+    "final": 0.18923024680012196,
+    "delta": -0.02792356319730445,
+    "positiveRuns": 8,
+    "diversity": 0.641,
+    "genome": 35.98500000000001
+  },
+  {
+    "changing": true,
+    "interactions": true,
+    "seeds": 30,
+    "initial": 0.22652617186653354,
+    "final": 0.2192415429406874,
+    "delta": -0.0072846289258462205,
+    "positiveRuns": 11,
+    "diversity": 0.6423333333333333,
+    "genome": 34.299
+  }
+]
