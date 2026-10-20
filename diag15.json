@@ -1,0 +1,27 @@
+{
+ "pulsed_cost0": {
+  "runs": 6,
+  "meanFractionCarryingStorageGene": 0.5,
+  "maxFraction": 1,
+  "meanStorage": 3.082982617447346,
+  "maxMeanStorage": 3.2347664135045457
+ },
+ "stable_cost0": {
+  "runs": 12,
+  "meanFractionCarryingStorageGene": 0.008674282475651118,
+  "maxFraction": 0.04416403785488959,
+  "meanStorage": 3.002718229204279,
+  "maxMeanStorage": 3.0212023834193418
+ },
+ "pulsed_cost004": {
+  "runs": 9,
+  "meanFractionCarryingStorageGene": 0.016460905349794237,
+  "maxFraction": 0.14814814814814814,
+  "meanStorage": 3.005997615261622,
+  "maxMeanStorage": 3.0539785373546002
+ },
+ "mutationSupply": {
+  "mutationsApplied": 40000,
+  "finalGenomeCarriesStorageGene": true
+ }
+}

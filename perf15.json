@@ -1,0 +1,97 @@
+{
+ "node": "v22.22.0",
+ "emptyNodeMaxRssMB": 40.68359375,
+ "runs": [
+  {
+   "env": "rich",
+   "ms": 1683,
+   "peakPopulation": 566,
+   "heapAfterMB": 42.826454162597656,
+   "maxRssMB": 161.4375
+  },
+  {
+   "env": "scarce",
+   "ms": 632,
+   "peakPopulation": 139,
+   "heapAfterMB": 11.06109619140625,
+   "maxRssMB": 113.3125
+  },
+  {
+   "env": "plague",
+   "ms": 1221,
+   "peakPopulation": 400,
+   "heapAfterMB": 31.85675811767578,
+   "maxRssMB": 128.2578125
+  },
+  {
+   "env": "preyless",
+   "ms": 880,
+   "peakPopulation": 209,
+   "heapAfterMB": 18.996131896972656,
+   "maxRssMB": 148.36328125
+  },
+  {
+   "env": "damageHeavy",
+   "ms": 1174,
+   "peakPopulation": 398,
+   "heapAfterMB": 24.087303161621094,
+   "maxRssMB": 122.765625
+  },
+  {
+   "env": "extremeDisaster",
+   "ms": 948,
+   "peakPopulation": 335,
+   "heapAfterMB": 27.328773498535156,
+   "maxRssMB": 132.11328125
+  },
+  {
+   "env": "rich+pulsed",
+   "ms": 717,
+   "peakPopulation": 281,
+   "heapAfterMB": 11.645927429199219,
+   "maxRssMB": 120.66015625
+  },
+  {
+   "env": "rich+waves",
+   "ms": 1661,
+   "peakPopulation": 564,
+   "heapAfterMB": 39.68879699707031,
+   "maxRssMB": 140.6484375
+  },
+  {
+   "env": "rich+waves8",
+   "ms": 1778,
+   "peakPopulation": 538,
+   "heapAfterMB": 44.48701477050781,
+   "maxRssMB": 134.3671875
+  },
+  {
+   "env": "rich+storage",
+   "ms": 645,
+   "peakPopulation": 198,
+   "heapAfterMB": 8.462684631347656,
+   "maxRssMB": 123.23828125
+  },
+  {
+   "env": "rich+lineages",
+   "ms": 1743,
+   "peakPopulation": 540,
+   "heapAfterMB": 45.922889709472656,
+   "maxRssMB": 156.62109375
+  },
+  {
+   "env": "rich+rareBreeding",
+   "ms": 1166,
+   "peakPopulation": 669,
+   "heapAfterMB": 29.808143615722656,
+   "maxRssMB": 129.45703125
+  },
+  {
+   "env": "rich+periodic",
+   "ms": 1616,
+   "peakPopulation": 571,
+   "heapAfterMB": 58.535194396972656,
+   "maxRssMB": 173.0703125
+  }
+ ]
+}

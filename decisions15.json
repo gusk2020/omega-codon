@@ -1,0 +1,118 @@
+{
+ "P1_storage": {
+  "primary": {
+   "stat": 0.08249169700170182,
+   "ci95": [
+    0.02257261825909367,
+    0.16644199346405228
+   ],
+   "p": 0.001399930003499825,
+   "pHolm": 0.0055997200139993,
+   "n": 30,
+   "dz": 0.4037918873767616
+  },
+  "replication": {
+   "stat": 0.0831596563941332,
+   "ci95": [
+    0.03741860555684901,
+    0.14025782239823023
+   ],
+   "p": 0.00024998750062496874,
+   "n": 30,
+   "dz": 0.5524243090728661
+  },
+  "criteria": {
+   "holmBelow05": true,
+   "ciExcludesZeroInDirection": true,
+   "replicatedSameDirection": true
+  },
+  "verdict": "SUPPORTED"
+ },
+ "P2_storageEvolution": {
+  "primary": {
+   "stat": -0.005572358050405294,
+   "ci95": [
+    -0.019432322393115105,
+    0.0073514444514372725
+   ],
+   "p": 0.7895605219739013,
+   "pHolm": 0.7895605219739013,
+   "n": 30,
+   "dz": -0.14924901098752993
+  },
+  "replication": {
+   "stat": 0.03916128233124219,
+   "ci95": [
+    -0.044347960290003506,
+    0.1261684471385813
+   ],
+   "p": 0.19829008549572522,
+   "n": 30,
+   "dz": 0.16156533610015444
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciExcludesZeroInDirection": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ },
+ "P3_memory": {
+  "primary": {
+   "stat": 0.005306591590405058,
+   "ci95": [
+    -0.00832228962779674,
+    0.018958414756195124
+   ],
+   "p": 0.23383830808459577,
+   "pHolm": 0.46767661616919154,
+   "n": 30,
+   "dz": 0.13483559886150617
+  },
+  "replication": {
+   "stat": -0.002208238768851866,
+   "ci95": [
+    -0.01265274548509638,
+    0.00816954273323179
+   ],
+   "p": 0.6609669516524174,
+   "n": 30,
+   "dz": -0.07556806496296463
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciExcludesZeroInDirection": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ },
+ "P4_shortTermVsLongTerm": {
+  "primary": {
+   "stat": -0.31655751030195867,
+   "ci95": [
+    -0.6191371995814848,
+    0.11329220576435589
+   ],
+   "p": 0.0414,
+   "pHolm": 0.1242,
+   "n": 30,
+   "dz": null
+  },
+  "replication": {
+   "stat": -0.26806469468070226,
+   "ci95": [
+    -0.5952737910436492,
+    0.10170353158127766
+   ],
+   "p": 0.0756,
+   "n": 30,
+   "dz": null
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciExcludesZeroInDirection": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ }
+}

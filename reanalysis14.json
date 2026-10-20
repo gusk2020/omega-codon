@@ -1,0 +1,367 @@
+{
+ "B_rare_vs_frequent_selection": {
+  "extinct": {
+   "A": 3,
+   "B": 0,
+   "mcnemar": {
+    "A": 3,
+    "B": 0,
+    "n": 30,
+    "discordantAonly": 3,
+    "discordantBonly": 0,
+    "p": 0.25000000000000006
+   }
+  },
+  "persistenceRMST": {
+   "n": 30,
+   "meanDiff": -135.53333333333333,
+   "ci95": [
+    -309.1333333333333,
+    0
+   ],
+   "dz": -0.3194781596267347,
+   "p": 0.25308734563271834,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 3,
+   "droppedPairs": 0
+  },
+  "lifespanAllDeaths": {
+   "n": 30,
+   "meanDiff": 12.7372783722836,
+   "ci95": [
+    11.629323322456155,
+    13.844577423629037
+   ],
+   "dz": 4.028979027653782,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 30,
+   "negative": 0,
+   "droppedPairs": 0
+  },
+  "lifespanSurvivorsOnly_gardenOrMain": {
+   "n": 27,
+   "meanDiff": 12.505616948177662,
+   "ci95": [
+    11.431974858891452,
+    13.651078303552124
+   ],
+   "dz": 4.093158892813774,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 27,
+   "negative": 0,
+   "droppedPairs": 3
+  },
+  "popMedian": {
+   "n": 30,
+   "meanDiff": -146.06666666666666,
+   "ci95": [
+    -175,
+    -121.75
+   ],
+   "dz": -1.9507069357169569,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 30,
+   "droppedPairs": 0
+  }
+ },
+ "B_rare_selection_vs_drift": {
+  "extinct": {
+   "A": 3,
+   "B": 12,
+   "mcnemar": {
+    "A": 3,
+    "B": 12,
+    "n": 30,
+    "discordantAonly": 0,
+    "discordantBonly": 9,
+    "p": 0.00390625
+   }
+  },
+  "persistenceRMST": {
+   "n": 30,
+   "meanDiff": 226.96666666666667,
+   "ci95": [
+    78.8,
+    393.3333333333333
+   ],
+   "dz": 0.5019479345696994,
+   "p": 0.006549672516374182,
+   "alternative": "two-sided",
+   "positive": 11,
+   "negative": 1,
+   "droppedPairs": 0
+  },
+  "lifespanAllDeaths": {
+   "n": 30,
+   "meanDiff": 2.0261462913164747,
+   "ci95": [
+    0.9747156932887076,
+    3.0264390779104855
+   ],
+   "dz": 0.6923122129279466,
+   "p": 0.0008499575021248938,
+   "alternative": "two-sided",
+   "positive": 24,
+   "negative": 6,
+   "droppedPairs": 0
+  },
+  "lifespanSurvivorsOnly_gardenOrMain": {
+   "n": 18,
+   "meanDiff": 2.4373105553154297,
+   "ci95": [
+    1.2378304350868317,
+    3.6418590793205485
+   ],
+   "dz": 0.8875926298226338,
+   "p": 0.0020294189453125,
+   "alternative": "two-sided",
+   "positive": 15,
+   "negative": 3,
+   "droppedPairs": 12
+  },
+  "popMedian": {
+   "n": 30,
+   "meanDiff": 137.35,
+   "ci95": [
+    114.88333333333334,
+    158.26666666666668
+   ],
+   "dz": 2.249851426024221,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 28,
+   "negative": 2,
+   "droppedPairs": 0
+  }
+ },
+ "B_gardenLifespan_stage14_as_reported": {
+  "n": 27,
+  "meanDiff": 2.9724019014834786,
+  "ci95": [
+   -0.5434397843816067,
+   6.949393818941598
+  ],
+  "dz": 0.29049913147118905,
+  "p": 0.14699265036748163,
+  "alternative": "two-sided",
+  "positive": 16,
+  "negative": 11,
+  "droppedPairs": 3
+ },
+ "C_pulsed_selection_vs_drift": {
+  "extinct": {
+   "A": 10,
+   "B": 0,
+   "mcnemar": {
+    "A": 10,
+    "B": 0,
+    "n": 30,
+    "discordantAonly": 10,
+    "discordantBonly": 0,
+    "p": 0.001953125
+   }
+  },
+  "persistenceRMST": {
+   "n": 30,
+   "meanDiff": -286.43333333333334,
+   "ci95": [
+    -472.3666666666667,
+    -122.1
+   ],
+   "dz": -0.5817682831071475,
+   "p": 0.0020998950052497373,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 10,
+   "droppedPairs": 0
+  },
+  "lifespanAllDeaths": {
+   "n": 30,
+   "meanDiff": -2.323461612837976,
+   "ci95": [
+    -2.4751600012532244,
+    -2.153866210136327
+   ],
+   "dz": -5.082579191069372,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 30,
+   "droppedPairs": 0
+  },
+  "lifespanSurvivorsOnly_gardenOrMain": {
+   "n": 20,
+   "meanDiff": -2.288312428539492,
+   "ci95": [
+    -2.4923290568607275,
+    -2.0432516474756004
+   ],
+   "dz": -4.291348348476634,
+   "p": 0.0000019073486328125,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 20,
+   "droppedPairs": 10
+  },
+  "popMedian": {
+   "n": 30,
+   "meanDiff": -52.61666666666667,
+   "ci95": [
+    -56.28333333333333,
+    -48.56666666666667
+   ],
+   "dz": -4.811635276474836,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 30,
+   "droppedPairs": 0
+  }
+ },
+ "C_pulsed_vs_stable_selection": {
+  "extinct": {
+   "A": 10,
+   "B": 0,
+   "mcnemar": {
+    "A": 10,
+    "B": 0,
+    "n": 30,
+    "discordantAonly": 10,
+    "discordantBonly": 0,
+    "p": 0.001953125
+   }
+  },
+  "persistenceRMST": {
+   "n": 30,
+   "meanDiff": -286.43333333333334,
+   "ci95": [
+    -472.3666666666667,
+    -122.1
+   ],
+   "dz": -0.5817682831071475,
+   "p": 0.0020998950052497373,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 10,
+   "droppedPairs": 0
+  },
+  "lifespanAllDeaths": {
+   "n": 30,
+   "meanDiff": -17.864716867401913,
+   "ci95": [
+    -18.304885847528958,
+    -17.390392393134523
+   ],
+   "dz": -13.457694567412716,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 30,
+   "droppedPairs": 0
+  },
+  "lifespanSurvivorsOnly_gardenOrMain": {
+   "n": 20,
+   "meanDiff": -17.87817248179373,
+   "ci95": [
+    -18.473048343304033,
+    -17.215065654843944
+   ],
+   "dz": -12.095391230597025,
+   "p": 0.0000019073486328125,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 20,
+   "droppedPairs": 10
+  },
+  "popMedian": {
+   "n": 30,
+   "meanDiff": -306.5833333333333,
+   "ci95": [
+    -313.48333333333335,
+    -299.1
+   ],
+   "dz": -14.877185624324552,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 30,
+   "droppedPairs": 0
+  }
+ },
+ "C_lowStable_selection_vs_drift": {
+  "extinct": {
+   "A": 0,
+   "B": 0,
+   "mcnemar": {
+    "A": 0,
+    "B": 0,
+    "n": 30,
+    "discordantAonly": 0,
+    "discordantBonly": 0,
+    "p": 1
+   }
+  },
+  "persistenceRMST": {
+   "n": 30,
+   "meanDiff": 0,
+   "ci95": [
+    0,
+    0
+   ],
+   "dz": null,
+   "p": 1,
+   "alternative": "two-sided",
+   "positive": 0,
+   "negative": 0,
+   "droppedPairs": 0
+  },
+  "lifespanAllDeaths": {
+   "n": 30,
+   "meanDiff": 8.573929672293746,
+   "ci95": [
+    7.894193812406443,
+    9.348608604508856
+   ],
+   "dz": 4.035263779287908,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 30,
+   "negative": 0,
+   "droppedPairs": 0
+  },
+  "lifespanSurvivorsOnly_gardenOrMain": {
+   "n": 30,
+   "meanDiff": 8.573929672293746,
+   "ci95": [
+    7.864881762293363,
+    9.354192179633571
+   ],
+   "dz": 4.035263779287908,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 30,
+   "negative": 0,
+   "droppedPairs": 0
+  },
+  "popMedian": {
+   "n": 30,
+   "meanDiff": 10.916666666666666,
+   "ci95": [
+    9.166666666666666,
+    12.583333333333334
+   ],
+   "dz": 2.1757812236493215,
+   "p": 0.00004999750012499375,
+   "alternative": "two-sided",
+   "positive": 28,
+   "negative": 2,
+   "droppedPairs": 0
+  }
+ },
+ "note": "persistenceRMST = restricted mean lineage persistence up to 2000 steps (extinct runs contribute their extinction step); lifespanAllDeaths = mean individual lifespan over every recorded death, extinct runs included."
+}
