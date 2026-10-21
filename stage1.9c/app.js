@@ -15,10 +15,10 @@
   let assume = TM.find(settings.assume).id, hv = H.defaultView();
   (() => { const v = settings.hv; const ok = (r, lg) => Array.isArray(r) && r.length === 2 && r.every(Number.isFinite) && r[1] > r[0] && r[0] >= 0 && !(lg && r[0] <= 0);
     if (!v || !['linear', 'log'].includes(v.xScale) || !['linear', 'log'].includes(v.yScale) || !['C', 'K'].includes(v.xUnit) || (v.xScale === 'log' && v.xUnit === 'C') || !ok(v.xr, v.xScale === 'log') || !ok(v.yr, v.yScale === 'log')) return;
-    const n = { ...hv, split: v.split !== false, xUnit: v.xUnit, xScale: v.xScale, yScale: v.yScale, xRev: !!v.xRev, yRev: !!v.yRev, rangeMode: v.rangeMode === 'common' ? 'common' : 'per', xr: v.xr, yr: v.yr };
+    const n = { ...hv, split: v.split !== false, xUnit: v.xUnit, xScale: v.xScale, yScale: v.yScale, xRev: v.xRevMigrated ? !!v.xRev : true, yRev: !!v.yRev, rangeMode: v.rangeMode === 'common' ? 'common' : 'per', xr: v.xr, yr: v.yr };
     n.pr = H.autoPanels(n); if (v.pr) for (const id of Object.keys(n.pr)) if (v.pr[id] && ok(v.pr[id].xr, n.xScale === 'log') && ok(v.pr[id].yr, n.yScale === 'log')) n.pr[id] = v.pr[id];
     hv = n; })();
-  function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify({ assume, hv, ov, ovHist })); } catch (e) { /* storage may be unavailable */ } }
+  function saveSettings() { try { localStorage.setItem(SKEY, JSON.stringify({ assume, hv: { ...hv, xRevMigrated: true }, ov, ovHist })); } catch (e) { /* storage may be unavailable */ } }
 
   // ---------- storage ----------
   function readSaves() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
@@ -386,7 +386,7 @@
   }
   function drawEnvNote() {
     const st = game.live.stats(), tol = game.series.length ? game.series[game.series.length - 1].traits[3] : null;
-    $('env-note').innerHTML = `<div class="assume"><b>この四角は「表示用の仮定」です。</b>現在の地球の概数を置いたもので、エンジンの値ではありません。白い点線と「基準」は、地球地表の全球平均気温15℃（288.15 K）と1気圧（101325 Pa）。標準は、横＝温度の対数（右が高温）、縦＝圧力の対数（上が低圧、下が高圧）です。地図の上をなぞると移動、2本指（またはホイール）で拡大できます。</div>
+    $('env-note').innerHTML = `<div class="assume"><b>この四角は「表示用の仮定」です。</b>現在の地球の概数を置いたもので、エンジンの値ではありません。白い点線と「基準」は、地球地表の全球平均気温15℃（288.15 K）と1気圧（101325 Pa）。標準は、横＝温度の対数（左が高温、右が低温）、縦＝圧力の対数（上が低圧、下が高圧）です。地図の上をなぞると移動、2本指（またはホイール）で拡大できます。</div>
       <p class="note"><b>計算しているもの：</b>4つの領域ごとの個体数と領域間の移動（状況タブ）。領域は食料・獲物・熱ストレス・病気の強さが違うゲーム上の設定です。熱ストレス指標 ${st.thermal.toFixed(2)}（0〜1の無次元量で、温度ではありません）／集団の耐性の平均 ${tol === null ? '-' : tol.toFixed(2)}。<br><b>まだ計算していないもの：</b>温度・圧力・酸素・水分・重力そのもの、生き物ごとの適応範囲（重ね描きと履歴はダミー）。種分化・交雑は後のステージで実装します（いまは未実装です）。</p>`;
   }
   // pan / zoom on the map (per panel when ranges are per realm)

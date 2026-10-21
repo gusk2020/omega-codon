@@ -110,9 +110,9 @@ test('1.9C 共存: 旧設定（1.9B）より、多種が長く共存する。独
   }
   assert.ok(v2 >= 5 && v2 > legacy, `legacy ${legacy}/6, v2 ${v2}/6`); assert.ok(v2lost >= 1 && v2extinctEvents >= 1, 'in v2 some lineages must still go extinct: coexistence is not guaranteed');
 });
-test('1.9C 生息域マップ: 標準は温度の対数(K)×圧力の対数、上が低圧・右が高温、領域別の自動範囲。領域別／共通の切替、領域ごとの拡大・移動、全体表示', () => {
-  const v = H.defaultView(); assert.equal(v.xUnit, 'K'); assert.equal(v.xScale, 'log'); assert.equal(v.yScale, 'log'); assert.equal(v.yRev, true); assert.equal(v.xRev, false); assert.equal(v.rangeMode, 'per'); assert.equal(v.split, true);
-  assert.equal(H.project(300, v.xr, 'log', 100, false, false) > H.project(200, v.xr, 'log', 100, false, false), true, 'hotter must be to the right');
+test('1.9C 生息域マップ: 標準は温度の対数(K)×圧力の対数、上が低圧・左が高温（右が低温）、領域別の自動範囲。領域別／共通の切替、領域ごとの拡大・移動、全体表示', () => {
+  const v = H.defaultView(); assert.equal(v.xUnit, 'K'); assert.equal(v.xScale, 'log'); assert.equal(v.yScale, 'log'); assert.equal(v.yRev, true); assert.equal(v.xRev, true); assert.equal(v.rangeMode, 'per'); assert.equal(v.split, true);
+  assert.ok(H.project(300, v.xr, 'log', 100, v.xRev, false) < H.project(200, v.xr, 'log', 100, v.xRev, false), 'hotter must be to the LEFT by default'); assert.ok(H.project(300, v.xr, 'log', 100, false, false) > H.project(200, v.xr, 'log', 100, false, false), 'a manual flip puts hotter on the right'); assert.equal(H.resetView({ ...v, xRev: false }).xRev, false, 'reset keeps a manual flip'); assert.equal(H.defaultView().xRev, true);
   assert.ok(H.project(1e3, v.yr, 'log', 100, v.yRev, true) < H.project(1e7, v.yr, 'log', 100, v.yRev, true), 'low pressure must be at the top');
   const air = H.panelRange(v, 'air'), water = H.panelRange(v, 'water'); assert.notDeepEqual(air.yr, water.yr); assert.ok(air.yr[1] < water.yr[1]); for (const r of H.REALMS) { const p = H.panelRange(v, r.id); assert.ok(p.xr[0] <= r.T[0] && p.xr[1] >= r.T[1] && p.yr[0] <= r.P[0] && p.yr[1] >= r.P[1] && p.xr[0] <= H.REFERENCE.T && p.yr[0] <= H.REFERENCE.P && p.yr[1] >= H.REFERENCE.P); }
   const c = { ...v, rangeMode: 'common' }; assert.deepEqual(H.panelRange(c, 'air'), H.panelRange(c, 'water')); assert.deepEqual(H.panelRange({ ...v, split: false }, 'air'), { xr: v.xr, yr: v.yr });
