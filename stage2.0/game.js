@@ -61,6 +61,7 @@
     { id: 'pulse', engine: 'rich', regime: P20, name: '波のある土地', text: '食べ物が周期的に増減する（Stage 1.7の基準環境）。絶滅しやすい。' },
     { id: 'scarce', engine: 'scarce', regime: null, name: '乏しい土地', text: '食べ物が少ない。厳しい。' },
     { id: 'plague', engine: 'plague', regime: null, name: '疫病の土地', text: '病気が多い。' },
+    { id: 'famine', engine: 'rich', regime: { period: 150, pulseLength: 10 }, name: '長い飢えのある土地', text: '食べ物が約150ステップごとの短い期間にだけ豊かになり、普段は乏しい。燃費がよく飢えを越えられる生き物が残る回がある（隠れた補正ではなく、飢えを越える力が実際に生死を分ける条件。繁殖型はほぼ残れない）。' },
   ];
   const OPTIONS = {
     watch: { id: 'watch', name: '見守る', text: '何もしない。' },
@@ -112,7 +113,7 @@
     if (!envDef) throw new Error('unknown environment');
     const counts = creatures.map(() => 0); if (v2) { const n = initialIdx.length, per = Math.floor(100 / n); initialIdx.forEach((li, k) => { counts[li] = per + (k < 100 - per * n ? 1 : 0); }); }
     const TB = v2 && cfg.time === 'adaptive'; // Stage 2.0 time base (30 days per step, leaps, civilisation, abnormal cells)
-    const live = E.simulate({ seed: cfg.seed, steps: 1e9, continueWhenEmpty: v2, ...(TB ? { civ: true, abnormal: true, deathRecordCap: 20000 } : {}), environment: envDef.engine, resourceRegime: envDef.regime, founders: 100, lineageCount: creatures.length,
+    const live = E.simulate({ seed: cfg.seed, steps: 1e9, continueWhenEmpty: v2, ...(TB ? { civ: true, abnormal: true, deathRecordCap: 20000 } : {}), environment: envDef.engine, resourceRegime: envDef.regime, ...(envDef.scale ? { resourceScale: envDef.scale } : {}), founders: 100, lineageCount: creatures.length,
       founderGenomes: creatures.map((c, i) => genomeOf(i)), sampleEvery: 100, live: true,
       ...(v2 ? { founderCounts: counts, niche: { slots: NICHE_SLOTS, weights: creatures.map((c) => c.niche), specialistBonus: NICHE_BONUS } } : {}),
       realms: realmsOn ? { startByLineage: creatures.map((c) => c.startRealm) } : null });
