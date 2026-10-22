@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1621">
+<title>Omega Codon</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="start" class="screen">
+  <h1>Omega Codon</h1>
+  <p class="sub">生き物を選んで、進化を観察する試作版（Stage 1.9A）。</p>
+  <h2>1. 注目する生き物（1〜3種）</h2>
+  <div id="creatures"></div>
+  <h2>2. 競争相手の数</h2>
+  <div id="rivals" class="chips"></div>
+  <p id="rival-preview" class="note"></p>
+  <h2>3. 開始の時代</h2>
+  <div id="scenarios" class="chips"></div>
+  <p class="note">衝突直後の食料減少と寒冷化は外部条件として加わりますが、何が生き残るかは固定しません。</p>
+  <h2>4. 土地</h2>
+  <div id="envs" class="chips"></div>
+  <h2>5. 乱数の種</h2>
+  <div class="row"><input id="seed" type="number" inputmode="numeric" min="1" value="1"><button id="reseed" class="btn small">ランダム</button></div>
+  <button id="go" class="btn primary big">進化を始める</button>
+  <h2>セーブデータ</h2>
+  <div id="slots-start"></div>
+  <p class="note">進化の計算はStage 1.7のエンジンのままです。操作は「分岐点」でだけ出来ます。選ばれなかった多数の生き物は、個別には計算せず、資源・獲物という背景として扱います。</p>
+</div>
+
+<div id="play" class="screen" hidden>
+  <header>
+    <div><b id="h-t">0</b><small> 経過（仮定）</small></div>
+    <div><b id="h-gen">0</b><small> 累積世代</small></div>
+    <div><b id="h-pop">0</b><small> 体</small></div>
+    <button id="menu" class="btn small">メニュー</button>
+  </header>
+  <div id="timeline"></div>
+  <canvas id="world" width="360" height="260"></canvas>
+  <div id="rankbar"></div>
+  <div id="linbar"></div>
+  <div class="controls">
+    <button id="pp" class="btn primary">⏸</button>
+    <div id="speeds"></div>
+    <button id="save" class="btn small">保存</button>
+  </div>
+  <div class="skiprow"><button id="skip" class="btn small">⏭ 次の出来事まで早送り</button><span id="skipnote" class="note"></span></div>
+  <div id="speedinfo" class="note"></div>
+  <div class="controls2"><button id="auto" class="chip">自動：OFF</button><span class="note" id="auto-note">分岐点で止まります</span></div>
+  <div class="bghead">背景（アリーナの外の世界）：粗い計算</div>
+  <canvas id="bgstrip" width="360" height="110"></canvas>
+  <div id="legend"></div>
+  <nav id="tabs"><button data-tab="stat" class="on">状況</button><button data-tab="ind">個体</button><button data-tab="rank">ランク</button><button data-tab="trait">形質</button><button data-tab="graph">推移</button><button data-tab="env">環境</button><button data-tab="log">履歴</button></nav>
+  <section id="tab-stat"></section>
+  <section id="tab-ind" hidden></section>
+  <section id="tab-rank" hidden></section>
+  <section id="tab-trait" hidden></section>
+  <section id="tab-graph" hidden><canvas id="chart" width="360" height="200"></canvas><div id="chart-note" class="note"></div></section>
+  <section id="tab-env" hidden>
+    <div class="chips" id="env-modes"></div>
+    <div class="chips" id="ov-modes"></div>
+    <div id="ov-detail"></div>
+    <canvas id="habitat" width="360" height="360"></canvas>
+    <div class="envtools" id="env-tools"></div>
+    <div id="env-note" class="note"></div>
+  </section>
+  <section id="tab-log" hidden></section>
+</div>
+
+<div id="modal" hidden><div class="card" id="modal-card"></div></div>
+<div id="toast" hidden></div>
+<script src="engine19.js"></script>
+<script src="background.js"></script>
+<script src="earthhistory.js"></script>
+<script src="adaptation.js"></script>
+<script src="timemodel.js"></script>
+<script src="habitat.js"></script>
+<script src="rank.js"></script>
+<script src="game.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
