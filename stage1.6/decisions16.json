@@ -1,0 +1,182 @@
+{
+ "P1_carriers": {
+  "endpoint": "storage-gene carrier fraction at step 2000, supply 1 / effect 1, cost 0: (sel p20 - sel stable) - (drift p20 - drift stable)",
+  "primary": {
+   "effect": 0.1367116333423049,
+   "ci95": [
+    -0.03647781517710997,
+    0.3145689260792515
+   ],
+   "p": 0.07719614019299036,
+   "pHolm": 0.23158842057897105,
+   "n": 30,
+   "dz": 0.27313530277283576
+  },
+  "replication": {
+   "effect": 0.007112417711161608,
+   "ci95": [
+    -0.1674852073398987,
+    0.1915534377613854
+   ],
+   "p": 0.46842657867106646,
+   "n": 30,
+   "dz": 0.01369315014164173
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciLowerAboveZero": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ },
+ "P2_capacity": {
+  "endpoint": "mean storage capacity at step 6000, supply 16 / effect 4, cost 0: (sel p20 - sel stable) - (drift p20 - drift stable)",
+  "primary": {
+   "effect": 0.8271023296988211,
+   "ci95": [
+    0.03371624912027061,
+    1.6318307017268034
+   ],
+   "p": 0.029398530073496326,
+   "pHolm": 0.1175941202939853,
+   "n": 30,
+   "dz": 0.3640752539921671
+  },
+  "replication": {
+   "effect": 0.03715045647667264,
+   "ci95": [
+    -0.5862630649879134,
+    0.6714111795690172
+   ],
+   "p": 0.4568771561421929,
+   "n": 30,
+   "dz": 0.02121566663625135
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciLowerAboveZero": true,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ },
+ "P3_competition": {
+  "endpoint": "share of the capacity-8 lineage minus 0.5, pulsed p20, holding cost 0 (win margin, 600 steps, mutation off)",
+  "primary": {
+   "effect": 0.21800262340831797,
+   "ci95": [
+    0.12526581600432682,
+    0.30116269865945344
+   ],
+   "p": 0.000199990000499975,
+   "pHolm": 0.00119994000299985,
+   "n": 30,
+   "dz": 0.860034791420604
+  },
+  "replication": {
+   "effect": 0.3000710740676483,
+   "ci95": [
+    0.21736653558782543,
+    0.37459237668985584
+   ],
+   "p": 0.00004999750012499375,
+   "n": 30,
+   "dz": 1.3595194727764626
+  },
+  "criteria": {
+   "holmBelow05": true,
+   "ciLowerAboveZero": true,
+   "replicatedSameDirection": true
+  },
+  "verdict": "SUPPORTED"
+ },
+ "P4_memoryNet": {
+  "endpoint": "median population, memory minus no memory, infection 3 steps / wave interval 6 / decay 0.1, same antigen, fixed genotype",
+  "primary": {
+   "effect": -16.35,
+   "ci95": [
+    -17.716666666666665,
+    -15.033333333333333
+   ],
+   "p": 1,
+   "pHolm": 1,
+   "n": 30,
+   "dz": -4.275583777241211
+  },
+  "replication": {
+   "effect": -16.883333333333333,
+   "ci95": [
+    -18,
+    -15.833333333333334
+   ],
+   "p": 1,
+   "n": 30,
+   "dz": -5.618725502812121
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciLowerAboveZero": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ },
+ "P5_preyRefuge": {
+  "endpoint": "share of runs that go extinct, pulsed, selection on: baseline minus prey refuge 30%",
+  "primary": {
+   "effect": 0.3333333333333333,
+   "ci95": [
+    0.16666666666666666,
+    0.5
+   ],
+   "p": 0.0009765625,
+   "pHolm": 0.0048828125,
+   "n": 30,
+   "dz": 0.6952217871538071
+  },
+  "replication": {
+   "effect": 0.36666666666666664,
+   "ci95": [
+    0.2,
+    0.5333333333333333
+   ],
+   "p": 0.00048828124999999995,
+   "n": 30,
+   "dz": 0.7480970009343827
+  },
+  "criteria": {
+   "holmBelow05": true,
+   "ciLowerAboveZero": true,
+   "replicatedSameDirection": true
+  },
+  "verdict": "SUPPORTED"
+ },
+ "P6_fecundityLock": {
+  "endpoint": "share of runs that go extinct, pulsed, selection on: baseline minus fecundity locked at the founder value",
+  "primary": {
+   "effect": -0.03333333333333333,
+   "ci95": [
+    -0.26666666666666666,
+    0.23333333333333334
+   ],
+   "p": 0.696380615234376,
+   "pHolm": 1,
+   "n": 30,
+   "dz": -0.04639970304285078
+  },
+  "replication": {
+   "effect": 0.13333333333333333,
+   "ci95": [
+    -0.1,
+    0.36666666666666664
+   ],
+   "p": 0.2119750976562503,
+   "n": 30,
+   "dz": 0.19566253699376973
+  },
+  "criteria": {
+   "holmBelow05": false,
+   "ciLowerAboveZero": false,
+   "replicatedSameDirection": false
+  },
+  "verdict": "NOT SUPPORTED (FAIL)"
+ }
+}
