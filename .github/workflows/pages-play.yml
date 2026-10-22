@@ -1,0 +1,34 @@
+name: Deploy playable prototype (Stage 1.8)
+on:
+  push:
+    branches: [dev/stage1.8]
+    paths: ['stage1.8/index.html', 'stage1.8/app.js', 'stage1.8/game.js', 'stage1.8/engine18.js', 'stage1.8/style.css', '.github/workflows/pages-play.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests (the site is only published if they pass)
+        working-directory: stage1.8
+        run: node test18.js
+      - name: Stage site files
+        run: |
+          mkdir _site
+          cp stage1.8/index.html stage1.8/app.js stage1.8/game.js stage1.8/engine18.js stage1.8/style.css _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
