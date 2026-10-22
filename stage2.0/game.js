@@ -320,13 +320,14 @@
     }
     function bgWorldFactor() { if (!TB) return 1; const a = WORLD.ambient(wm), cv = wm.civ.residue.conv; return a.resource * (1 - 0.85 * (cv[0] + cv[1] + cv[2] + cv[3]) / 4); }
     const STANCE_JA = { ignore: '気に留めていない', use: '利用しようとしている', coexist: '共存している', hostile: '敵対している' };
-    function worldEvent(e) { addEvent(e.kind.startsWith('civ') ? 'civ' : 'world', e.text); }
+    game.worldMarks = [];
+    function worldEvent(e) { addEvent(e.kind.startsWith('civ') ? 'civ' : 'world', e.text); game.events[game.events.length - 1].sub = e.kind; game.worldMarks.push({ y: wm.years, kind: e.kind }); if (game.worldMarks.length > 300) game.worldMarks.shift(); }
     function pushEffects(st, means) {
       const prof = profiles(means), ctx = { prod: WORLD.ambient(wm).prod }, fx = CIVM.effects(wm.civ, prof, strategies, ctx), c = wm.civ.civ;
       live.setCiv({ res: fx.res, thermal: fx.thermal, pathogen: fx.pathogen, harm: fx.harm, move: fx.move, press: fx.press, cap: fx.cap, subsidy: fx.subsidy }); tb.fx = fx;
       for (let i = 0; i < creatures.length; i++) {
         const sc = fx.stances[i] || 'ignore', prev = tb.lastStance[i];
-        if (sc !== prev && (st.lineageAlive[i] > 0 || prev !== 'ignore')) { if (c && (sc !== 'ignore' || prev !== 'ignore')) addEvent('civ', `文明は${creatures[i].name}${tag(i)}を${STANCE_JA[sc]}（接触${Math.round((fx.assess[i] ? fx.assess[i].exposure : 0) * 100)}%）`); tb.lastStance[i] = sc; }
+        if (sc !== prev && (st.lineageAlive[i] > 0 || prev !== 'ignore')) { if (c && (sc !== 'ignore' || prev !== 'ignore')) addEvent('civ', `文明は${creatures[i].name}${tag(i)}を${STANCE_JA[sc]}（接触${Math.round((fx.assess[i] ? fx.assess[i].exposure : 0) * 100)}%）`); game.events[game.events.length - 1].sub = 'stance-' + sc; tb.lastStance[i] = sc; }
         // a hostile episode: counted as survived if the lineage is still standing when it ends, no coexistence policy was in force, and it lasted long enough
         const ep = tb.episode[i], hostile = !!c && sc === 'hostile';
         if (hostile && !ep.on) { ep.on = true; ep.startY = wm.years; ep.helped = false; }

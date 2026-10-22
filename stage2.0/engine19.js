@@ -475,7 +475,9 @@
     }
     sample(0);
 
+    let lastT = 0;
     const stepOnce = (t) => {
+      lastT = t;
       if (pop.length === 0 && !o.continueWhenEmpty) { if (extinctAt === null) extinctAt = t - 1; return false; }
 
       if (PR) { // epidemic waves
@@ -779,7 +781,7 @@
     for (let t = 1; t <= o.steps; t++) if (!stepOnce(t)) break;
     return buildResult();
     function buildResult() {
-    const ran = extinctAt === null ? o.steps : extinctAt;
+    const ran = Math.min(extinctAt === null ? (o.live ? lastT : o.steps) : extinctAt, traceLen - 1); // a live run has no fixed end: report the steps actually run (traces cover the first 100000)
     const personSteps = (() => { let s2 = 0; for (let t = 1; t <= ran; t++) s2 += popTrace[t - 1]; return s2; })();
     const patchSteps = o.patches * ran;
     const windowRate = (a, b) => { if (b < a) return null; let br = 0, ps = 0; for (let t = a; t <= b; t++) { br += birthTrace[t]; ps += popTrace[t - 1]; } return ps ? br / ps : null; };
