@@ -562,7 +562,7 @@
               if (o.memory) x.M += lo[L.memoryLearn] * (x.O - x.M) * 0.2;
             }
           }
-          if (rand() < 0.3) { const inj = 0.05 * env.injury * (1 - 0.5 * lo[L.tolerance]); x.damage += inj; x.dmgSrc[4] += inj; }
+          if (rand() < 0.3) { const inj = 0.05 * env.injury * (1 - 0.5 * lo[L.tolerance]); x.damage += inj; lstat.dmgIn[x.lin] += inj; x.dmgSrc[4] += inj; }
         }
         const locusCost = 0.03 * lo[L.movement] + 0.04 * lo[L.predation] + 0.05 * lo[L.tolerance] + 0.06 * lo[L.immune]
           + 0.05 * ((0.5 - lo[L.falsePositive]) + (0.5 - lo[L.falseNegative])) / 0.48 + x.gcost;
