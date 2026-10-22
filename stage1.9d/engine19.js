@@ -670,7 +670,7 @@
           // Realm movement: only while exploring, only with a reserve, success odds scale with the movement trait, adjacent realms only.
           if (mode === M_EXPLORE && x.energy > RM.reserve && rand() < RM.rate * lo[L.movement]) {
             const adj = REALM_ADJ[x.patch], dest = adj[Math.floor(rand() * adj.length)], cost = RM.cost * REALM_DIFF[x.patch][dest];
-            if (x.energy >= cost + RM.reserve) { x.energy -= cost; ledger.spent += cost; spentBy.moving = (spentBy.moving || 0) + cost; moves[x.patch][dest]++; x.patch = dest; }
+            if (x.energy >= cost + RM.reserve) { x.energy -= cost; ledger.spent += cost; lstat.spent[x.lin] += cost; spentBy.moving = (spentBy.moving || 0) + cost; moves[x.patch][dest]++; x.patch = dest; }
           }
         } else if (rand() < o.migrationRate * 0.25) x.patch = Math.floor(rand() * o.patches);
         next.push(x);

@@ -142,7 +142,7 @@ test('1.9D 旧セーブ（v4）: 注目系統が絶えて遊び続けたセー�
   assert.equal(JSON.stringify(b.events.filter((e) => e.kind !== 'rank').map((e) => [e.t, e.kind, e.text])), JSON.stringify(a.events.map((e) => [e.t, e.kind, e.text])));
 });
 test('1.9D 観察のみ: 同じ設定で、1.9Cのゲームと1.9Dのゲームは、4000ステップまで同じ状態（個体中心の記録・ランクは計算に影響しない）', () => {
-  for (const seed of [3, 9]) { const cfg = { creatures: ['lowMetabolism'], rivals: G.pickRivals(seed, ['lowMetabolism'], 2), seed, realms: true, scenario: 'kpg', ecology: 'v2' }; const a = G9C.newGame(E9C, cfg), b = G.newGame(E, cfg); a.setAutoContinuous(true); b.setAutoContinuous(true); a.advance(2500); b.advance(2500); assert.equal(full(b.live.stats()), full(a.live.stats()), 'seed ' + seed); }
+  for (const seed of [3, 9]) { const cfg = { creatures: ['lowMetabolism'], rivals: G.pickRivals(seed, ['lowMetabolism'], 2), seed, realms: true, scenario: 'kpg', ecology: 'v2' }; const a = G9C.newGame(E9C, cfg), b = G.newGame(E, cfg); a.setAutoContinuous(true); b.setAutoContinuous(true); a.advance(2500); adv(b, 2500); assert.equal(full(b.live.stats()), full(a.live.stats()), 'seed ' + seed); }
 });
 test('1.9D 個体中心の集計: 年齢別の死亡率・損傷の出入り・休眠・消費が、エンジンの総量と一致する', () => {
   const l = E.simulate({ seed: 4, steps: 1e9, environment: 'rich', realms: true, lineageCount: 2, founderGenomes: [gen('standard'), gen('lowMetabolism')], founders: 100, live: true, continueWhenEmpty: true }); l.step(1500);
@@ -159,8 +159,8 @@ test('1.9D 連続生存: 年齢は細胞が入れ替わっても続く（置換�
 });
 test('1.9D 固定終了の撤廃: ライブ実行は10万ステップを超えて続き、アリーナが空でも（背景から戻れるように）止まらない', () => {
   const l = E.simulate({ seed: 1, steps: 1e9, environment: 'rich', founders: 30, live: true, continueWhenEmpty: true }); l.step(300); assert.ok(!l.done);
-  const e = E.simulate({ seed: 1, steps: 1e9, environment: 'scarce', founders: 5, founderGenomes: [gen('tough')], live: true, continueWhenEmpty: true }); e.step(400); assert.equal(e.stats().population, 0); assert.ok(!e.done); e.introduce(0, gen('standard'), 10, 0); e.step(10); assert.ok(e.stats().population > 0);
-  const stop = E.simulate({ seed: 1, steps: 1e9, environment: 'scarce', founders: 5, founderGenomes: [gen('tough')], live: true }); stop.step(400); assert.ok(stop.done, 'without the option, an empty arena still ends the run (old behaviour)');
+  const e = E.simulate({ seed: 1, steps: 1e9, environment: 'scarce', founders: 5, founderGenomes: [gen('tough')], live: true, continueWhenEmpty: true }); e.setEnvMod({ resource: 0 }); e.step(400); e.setEnvMod({}); assert.equal(e.stats().population, 0); assert.ok(!e.done); e.introduce(0, gen('standard'), 10, 0); e.step(10); assert.ok(e.stats().population > 0);
+  const stop = E.simulate({ seed: 1, steps: 1e9, environment: 'scarce', founders: 5, founderGenomes: [gen('tough')], live: true }); stop.setEnvMod({ resource: 0 }); stop.step(400); assert.ok(stop.done, 'without the option, an empty arena still ends the run (old behaviour)');
 });
 test('1.9D 節目: 設定した節目で止まり、止まっている間は状態が変わらず、続行を記録し、保存・読込で再現する。自動継続では勝手に進まない', () => {
   const cfg = { creatures: ['standard'], rivals: ['hunter'], seed: 5, realms: true, scenario: 'kpg', ecology: 'v2', checkpoint: { first: 600, every: 500 } }, g = G.newGame(E, cfg); g.setAutoContinuous(true);
@@ -168,7 +168,7 @@ test('1.9D 節目: 設定した節目で止まり、止まっている間は状�
   const intervals = seen.filter((x) => x[1] === 'interval').map((x) => x[0]); assert.deepEqual(intervals.slice(0, 3), [600, 1100, 1600]);
   assert.ok(g.log.filter((e) => e.kind === 'continue').length >= 3);
   const sv = JSON.parse(JSON.stringify(g.save())), b = G.loadGame(E, sv); while (b.replayTo !== null) b.advance(100); assert.equal(full(b.live.stats()), full(g.live.stats())); assert.equal(b.checkpoint === null, g.checkpoint === null); assert.equal(JSON.stringify(b.log), JSON.stringify(g.log));
-  const pend = G.newGame(E, cfg); pend.advance(600); assert.equal(pend.checkpoint.kind, 'interval'); const l2 = G.loadGame(E, JSON.parse(JSON.stringify(pend.save()))); while (l2.replayTo !== null) l2.advance(100); assert.ok(l2.checkpoint && l2.checkpoint.t === 600, 'a save made at a checkpoint is still at the checkpoint');
+  const pend = G.newGame(E, cfg); pend.setAutoContinuous(true); pend.advance(600); assert.equal(pend.checkpoint.kind, 'interval'); const l2 = G.loadGame(E, JSON.parse(JSON.stringify(pend.save()))); while (l2.replayTo !== null) l2.advance(100); assert.ok(l2.checkpoint && l2.checkpoint.t === 600, 'a save made at a checkpoint is still at the checkpoint');
   const def = G.newGame(E, { creatures: ['standard'], seed: 1, realms: true, ecology: 'v2' }); def.advance(1000); assert.equal(def.checkpoint, null, 'default first checkpoint is the old fixed end, 100000 steps');
 });
 test('1.9D 節目: 注目系統がすべて絶えたら止まって知らせる（敗北条件は未実装で、観察は続けられる）', () => {
