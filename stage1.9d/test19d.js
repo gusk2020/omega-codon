@@ -5,14 +5,14 @@ const E7 = require('../stage1.7/engine17'), E8 = require('../stage1.8/engine18')
 const E9C = require('../stage1.9c/engine19'), G9C = require('../stage1.9c/game');
 const E = require('./engine19'), G = require('./game'), H = require('./habitat'), BG = require('./background'), AD = require('./adaptation'), RK = require('./rank');
 const results = [];
-function test(name, fn) { const t = Date.now(); try { fn(); results.push([name, 'PASS', Date.now() - t]); } catch (e) { results.push([name, 'FAIL', Date.now() - t]); console.error('FAIL', name, '\n ', String(e.stack).slice(0, 800)); process.exitCode = 1; } }
+function test(name, fn) { const t = Date.now(); console.log('… ' + name.slice(0, 60)); try { fn(); results.push([name, 'PASS', Date.now() - t]); } catch (e) { results.push([name, 'FAIL', Date.now() - t]); console.error('FAIL', name, '\n ', String(e.stack).slice(0, 800)); process.exitCode = 1; } }
 const P20 = { period: 20, pulseLength: 4 };
 const core = (st) => JSON.stringify({ ...st, parentAgeSum: undefined, lifeSum: undefined, thermal: undefined, realmAlive: undefined, moves: undefined, lineageStats: undefined });
 const full = (st) => JSON.stringify(st);
 const evKey = (g) => JSON.stringify(g.events.map((e) => [e.t, e.kind, e.text]));
 const strip = (r) => JSON.stringify({ h: r.history, c: r.deathCauses, e: r.energy, p: r.population, l: r.lifespan, g: r.finalGenomes.map((x) => x.genes), eco: r.ecology, pred: r.predation, m: r.modeFractions });
 // The game now pauses at checkpoints (and when the focus lineage dies out). These older checks only want the simulation to go on, so they continue every pause.
-const adv = (g, n) => { const target = g.t + n; while (g.t < target && !g.isOver) { g.advance(target - g.t); if (g.checkpoint) g.continueFromCheckpoint(); } return g.t; };
+const adv = (g, n) => { const target = g.t + n; while (g.t < target && !g.isOver && !g.pending) { g.advance(target - g.t); if (g.checkpoint) g.continueFromCheckpoint(); } return g.t; };
 const gen = (id) => G.makeGenome(E, G.CREATURES.find((c) => c.id === id));
 function drive(g, steps, choice = 'watch') { while (g.t < steps && !g.live.done) { adv(g, Math.min(50, steps - g.t)); if (g.pending) g.choose(choice); } return g; }
 
@@ -95,7 +95,7 @@ test('1.9D 適応範囲の履歴: 100ステップごと＋重要な出来事で�
 });
 test('1.9D セーブ→ロード（v4）: 競争相手・背景・自動・履歴を含めて、続けて遊んだときと同じ', () => {
   const cfg = { creatures: ['standard'], rivals: ['hunter', 'tough'], seed: 14, realms: true, scenario: 'kpg', ecology: 'v2' }, g = G.newGame(E, cfg); let n = 0; for (let i = 0; i < 40; i++) { adv(g, 50); if (g.pending) { n++; g.choose(n % 2 ? 'auto' : 'support'); } }
-  const sv = JSON.parse(JSON.stringify(g.save())); assert.equal(sv.v, 4); assert.equal(sv.cfg.ecology, 'v2');
+  const sv = JSON.parse(JSON.stringify(g.save())); assert.equal(sv.v, 5); assert.equal(sv.cfg.ecology, 'v2');
   const b = G.loadGame(E, sv); while (b.replayTo !== null) b.advance(40);
   assert.equal(full(b.live.stats()), full(g.live.stats())); assert.equal(evKey(b), evKey(g)); assert.equal(JSON.stringify(b.backgroundReport()), JSON.stringify(g.backgroundReport())); assert.equal(JSON.stringify(b.evolutionReport()), JSON.stringify(g.evolutionReport()));
   adv(g, 150); adv(b, 150); assert.equal(full(b.live.stats()), full(g.live.stats()));
