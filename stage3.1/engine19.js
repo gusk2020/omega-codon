@@ -445,7 +445,7 @@
     const NLN = o.lineageCount, zeros = () => new Array(NLN).fill(0);
     // Stage 3.1 (all null/false unless o.v31): FREE realm crossings, EVOLUTION events and per-target stances (plants / animals). Everything below is a GAME model; see the design record.
     const V31 = o.v31 ? { free: o.v31.free !== false, evo: o.v31.evo !== false, tgt: o.v31.tgt !== false } : null;
-    const FREE = !!(V31 && V31.free && RM);
+    const FREE = !!(V31 && V31.free && RM), offPairs = V31 ? Array.from({ length: NLN }, () => new Array(16).fill(0)) : null;
     const TG = V31 && V31.tgt ? { plant: zeros(), animal: zeros() } : null;
     const EV = V31 && V31.evo ? { list: [], nextId: 1, rate: { exchange: 0.0004, fusion: 0.0003, sep: 0.02, ...(o.v31.rates || {}) }, counts: Array.from({ length: NLN }, () => ({ strengthen: 0, weaken: 0, newcap: 0, alter: 0, loss: 0, behaviour: 0, exchange: 0, fusion: 0, separation: 0 })), rand: null } : null;
     if (EV) EV.rand = rng((o.seed * 7919) ^ 0x3C6EF3);
@@ -808,7 +808,7 @@
             const adj = FREE ? ALL_ADJ[x.patch] : REALM_ADJ[x.patch]; let dest = adj[Math.floor(rand() * adj.length)];
             if (CV && CV.stance[x.lin] === 1) { let bp = CV.press[x.patch], best = x.patch; for (const a of adj) if (CV.press[a] < bp) { best = a; bp = CV.press[a]; } if (best !== x.patch) dest = best; } // a fleeing individual heads for the safest neighbouring realm
             const offRef = FREE && !REALM_ADJ[x.patch].includes(dest), cost = RM.cost * (FREE ? FREE_DIFF[x.patch][dest] : REALM_DIFF[x.patch][dest]);
-            if (!(offRef && frRand() > 0.15) && x.energy >= cost + RM.reserve) { x.energy -= cost; ledger.spent += cost; lstat.spent[x.lin] += cost; spentBy.moving = (spentBy.moving || 0) + cost; moves[x.patch][dest]++; x.patch = dest; if (DP) x.zb = 0; }
+            if (!(offRef && frRand() > 0.15) && x.energy >= cost + RM.reserve) { x.energy -= cost; ledger.spent += cost; lstat.spent[x.lin] += cost; spentBy.moving = (spentBy.moving || 0) + cost; moves[x.patch][dest]++; if (offRef) offPairs[x.lin][x.patch * 4 + dest]++; x.patch = dest; if (DP) x.zb = 0; }
           }
         } else if (rand() < o.migrationRate * 0.25) x.patch = Math.floor(rand() * o.patches);
         if (DP && DP.act[x.patch] && (mode === M_EXPLORE || mode === M_WAIT || mode === M_HUNT) && x.energy > 0.35 && rand() < DP.rate * (0.3 + 0.7 * lo[L.movement])) {
@@ -856,6 +856,7 @@
           for (const k of ['cap', 'subsidy']) if (c[k]) for (let l = 0; l < NLN; l++) if (c[k][l]) for (let i = 0; i < CV[k][l].length; i++) CV[k][l][i] = c[k][l][i];
         },
         setTarget(lin, kind, code) { if (!TG) throw new Error('v31 tgt option is off'); if (kind !== 'plant' && kind !== 'animal') throw new Error('unknown target'); TG[kind][lin] = code; },
+        routes() { return offPairs ? offPairs.map((a) => a.slice()) : null; }, // per lineage: crossings OUTSIDE the reference roads, indexed from*4+to
         targets() { return TG ? { plant: TG.plant.slice(), animal: TG.animal.slice() } : null; },
         evo() { return EV ? { counts: EV.counts.map((c) => ({ ...c })), events: EV.list.map((e) => ({ ...e })), total: EV.nextId - 1 } : null; },
         setStance(lin, code) { if (!CV) throw new Error('civ option is off'); CV.stance[lin] = code; },

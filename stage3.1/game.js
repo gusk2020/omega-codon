@@ -689,13 +689,8 @@
     // (4) Unusual evolutionary routes are noted as discoveries. A discovery changes neither survival nor the rank: it is a record, nothing more.
     game.discoveries = () => {
       if (!S31) return []; const st = live.stats(), out = [], ev = live.evo(), H = st.realmAlive;
-      const names = ['水中', '地上', '地中', '空中'];
-      for (const i of [0, 1, 2, 3, 4, 5, 6]) {
-        const nm = creatures[i] ? creatures[i].name : null; if (!nm || !ever[i]) continue;
-        const has = names.map((_, r) => H[r][i] >= 3);
-        if (has[0] && has[3]) out.push({ id: `wa-${i}`, lin: i, text: `${nm}が水中と空中の両方に定着（参考ルートの外の組み合わせ）`, kind: 'route' });
-        if (has[2] && has[3]) out.push({ id: `ua-${i}`, lin: i, text: `${nm}が地中と空中の両方に定着（参考ルートの外の組み合わせ）`, kind: 'route' });
-      }
+      const names = ['水中', '地上', '地中', '空中'], op = live.routes();
+      for (let i = 0; i < creatures.length; i++) { if (!ever[i]) continue; op[i].forEach((n, k) => { const a = Math.floor(k / 4), b = k % 4; if (n >= 30 && H[b][i] >= 5) out.push({ id: `rt-${i}-${k}`, lin: i, text: `${creatures[i].name}が、参考ルートの外の経路（${names[a]}→${names[b]}）を${n}回通り、${names[b]}に住みついた`, kind: 'route' }); }); }
       for (const e of ev.events) if (e.status === 'established' && ever[e.lin]) {
         if (e.kind === 'fusion') out.push({ id: `f-${e.id}`, lin: e.lin, text: `${creatures[e.lin].name}に、${creatures[e.from].name}由来の共生体が定着`, kind: 'fusion' });
         else if (e.kind === 'exchange' && e.sub === 'inter') out.push({ id: `x-${e.id}`, lin: e.lin, text: `${creatures[e.lin].name}に、${creatures[e.from].name}の遺伝子が定着（種間の機能交換）`, kind: 'exchange' });

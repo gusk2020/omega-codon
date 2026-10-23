@@ -973,7 +973,7 @@
   function draw(force) {
     if (!game) return; const st = game.live.stats();
     if (S31()) drawHud31(); else drawHud(); if (game.cfg.realms) drawWorld2(st); else drawWorld(st);
-    const lk = game.lineageReport().map((l) => l.alive + ':' + (game.rank.byLin[l.lin] && game.rank.byLin[l.lin].current ? game.rank.byLin[l.lin].current.rank : '')).join(',') + '|' + game.controlled; if (force || lk !== linKey) { linKey = lk; if (S31()) drawLinbar31(); else drawLinbar2(); }
+    const lk = game.lineageReport().map((l) => (S31() ? (l.alive > 0 ? 1 : 0) : l.alive) + ':' + (game.rank.byLin[l.lin] && game.rank.byLin[l.lin].current ? game.rank.byLin[l.lin].current.rank : '')).join(',') + '|' + game.controlled; if (force || lk !== linKey) { linKey = lk; if (S31()) drawLinbar31(); else drawLinbar2(); }
     const th = ADAPT() ? game.threat() : null, sk = (ADAPT() ? game.strategies().join(',') + (th ? th.stance : '') : '') + '|' + game.controlled; if (force || sk !== stratKey) { stratKey = sk; if (S31()) drawStance31(); else drawStratbar(); }
     if (force || tkN !== game.events.length) { tkN = game.events.length; if (S31()) drawTicker31(); else drawTicker(); }
     if (force || st.t - rsT >= 50 || st.t < rsT) { rsT = st.t; if (S31()) drawRankStrip31(); else drawRankStrip(); }
