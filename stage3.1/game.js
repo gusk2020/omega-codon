@@ -667,7 +667,9 @@
       if (e.kind === 'fusion') return `${nm}：${creatures[e.from].name}の遺伝子を共生体として内部に取り込んだ${phase === 'established' ? '（定着）' : ''}`;
       return `${nm}：取り込んでいた共生体の遺伝子を手放した個体が現れた${phase === 'established' ? '（定着）' : ''}`;
     }
+    const trails = creatures.map(() => []); // each lineage's mean key traits every 200 steps: the route it has taken (a record, nothing steers by it)
     function evoNotes() {
+      if (live.t % 200 === 0) { const mm = lineageTraitMeans(); mm.forEach((m, i) => { if (m && m.count >= 3) { trails[i].push([live.t, lti.map((k) => m.mean[k])]); if (trails[i].length > 240) trails[i] = trails[i].filter((_, j) => j % 2 === 0); } }); }
       const ev = live.evo(); if (!ev) return; let budget = 3;
       for (const e of ev.events) {
         const prev = evoSeen.get(e.id);
@@ -700,6 +702,7 @@
       }
       return out;
     };
+    game.trails = () => (S31 ? { traits: KEY_TRAITS.slice(), names: KEY_TRAITS.map((k) => TRAIT_ALL_JA[k] || k), paths: trails.map((p, i) => ({ lin: i, name: creatures[i].name, color: creatures[i].color, points: p.slice(), start: p.length ? p[0][1] : null })).filter((x) => x.points.length) } : null);
     game.freeRoutes = () => { if (!S31) return null; const mv = live.stats().moves; if (!mv) return null; const ref = E.REALM_ADJ; let on = 0, off = 0; mv.forEach((row, a) => row.forEach((n, b) => { if (a === b) return; if (ref[a].includes(b)) on += n; else off += n; })); return { reference: on, outside: off }; };
     game.save = () => ({ v: S31 ? 8 : S3 ? 7 : TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
     // Only values the engine actually computes: living counts, their change over about the last 100 steps, extinction time,

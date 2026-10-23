@@ -106,7 +106,7 @@
     if (!res || !res.judged) return { judged: false, reason: res ? res.reason : '判定中', items: [] };
     const next = RANKS[res.rankIndex + 1]; if (!next) return { judged: true, from: RANKS[res.rankIndex].id, to: null, items: [], note: '判定できる範囲の最高です（Ωは未判定）' };
     const items = [], maxL = Math.max(...next.K.map(([l]) => l)), minL = Math.min(...next.K.map(([l]) => l));
-    if (next.C > 0) { const need = CONTINUITY.tiers[next.C - 1], have = m.continuity || 0; items.push({ id: 'continuity', label: '長期生存', icon: '⏳', status: res.C >= next.C ? 'met' : have >= 0.75 * need ? 'near' : 'short', have, need, unit: 'ステップ' }); }
+    if (next.C > 0) { const need = CONTINUITY.tiers[next.C - 1], have = m.continuity || 0; items.push({ id: 'continuity', label: '長期生存', icon: '⏱', status: res.C >= next.C ? 'met' : have >= 0.75 * need ? 'near' : 'short', have, need, unit: 'ステップ' }); }
     for (const a of res.axes) {
       const ax = AXES.find((x) => x.id === a.id), shortRatio = (() => { const target = AXIS_TARGET(ax, minL); if (a.value === null || target === null) return null; return ax.better === 'high' ? Math.max(0, (target - a.value) / Math.max(1e-9, Math.abs(target))) : Math.max(0, (a.value - target) / Math.max(1e-9, Math.abs(target))); })();
       const status = a.value === null ? 'na' : a.tier !== null && a.tier >= maxL ? 'met' : a.tier !== null && a.tier >= minL ? 'part' : shortRatio !== null && shortRatio <= 0.25 ? 'near' : 'short';
