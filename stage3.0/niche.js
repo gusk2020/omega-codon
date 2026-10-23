@@ -51,6 +51,6 @@
   function damagePerStep(box, T, P) { const m = mismatch(box, T, P); return T_RATE * m.dT + P_RATE * (m.dPhi + m.dPlo); }
   // Suitability of each bin for a box: 1 = inside the box, falling to 0 where it would take 0.15 damage per step. Also the contiguous habitable runs.
   function suitability(box, prof) { return prof.T.map((T, k) => clamp(1 - damagePerStep(box, T, prof.P[k]) / 0.15, 0, 1)); }
-  function segments(suit, level = 0.5) { const out = []; let a = null; suit.forEach((s, k) => { if (s >= level) { if (a === null) a = k; } else if (a !== null) { out.push([a, k - 1]); a = null; } }); if (a !== null) out.push([a, suit.length - 1]); return out; }
+  function segments(suit, level = 0.75) { const out = []; let a = null; suit.forEach((s, k) => { if (s >= level) { if (a === null) a = k; } else if (a !== null) { out.push([a, k - 1]); a = null; } }); if (a !== null) out.push([a, suit.length - 1]); return out; }
   return { BINS, TREF, PREF, REALM_IDS, RES, BASE, T_RATE, P_RATE, profile, engineArrays, boxFromTraits, makeBox, mismatch, damagePerStep, suitability, segments };
 });

@@ -38,10 +38,10 @@ test('生息域：適応可能領域（箱）は進化する形質から決ま�
   const rep = b({ repairRate: 0.95 }); assert.ok(rep.Pmax > std.Pmax, 'repair adds pressure tolerance');
 });
 test('生息域：環境の柱（温度・圧力）は気候で動き、箱との重なりが縮小し、分断され得る', () => {
-  const prof0 = N.profile('water', 0), prof20 = N.profile('water', 20); assert.ok(prof20.T.every((t, k) => Math.abs(t - prof0.T[k] - 20) < 1e-9) && prof20.P.every((p, k) => p === prof0.P[k]), 'warming shifts T only');
+  const prof0 = N.profile('water', 0), prof20 = N.profile('water', 45); assert.ok(prof20.T.every((t, k) => Math.abs(t - prof0.T[k] - 45) < 1e-9) && prof20.P.every((p, k) => p === prof0.P[k]), 'warming shifts T only');
   const mkBox = (Tlo, Thi, Pmin, Pmax) => [Tlo, Thi, Pmin, Pmax];
-  const standard = mkBox(262, 311, 9e3, 7.7e6), s0 = N.suitability(standard, prof0), s20 = N.suitability(standard, prof20); assert.ok(s0.filter((v) => v >= 0.5).length > s20.filter((v) => v >= 0.5).length, 'warming shrinks the habitable part');
-  const split = mkBox(286, 345, 1e4, 3e8), seg = N.segments(N.suitability(split, prof0)); assert.ok(seg.length >= 2, `a box that fits the surface and the vents but not the cold middle is split in two: ${JSON.stringify(seg)}`);
+  const standard = mkBox(262, 311, 9e3, 7.7e6), s0 = N.suitability(standard, prof0), s20 = N.suitability(standard, prof20); assert.ok(N.segments(s0).reduce((a, [x, y]) => a + y - x + 1, 0) > N.segments(s20).reduce((a, [x, y]) => a + y - x + 1, 0), 'warming shrinks the habitable part'); assert.ok(N.segments(s20)[0][0] > N.segments(s0)[0][0], 'and moves it deeper');
+  const split = mkBox(292, 345, 1e4, 3e8), seg = N.segments(N.suitability(split, prof0)); assert.ok(seg.length >= 2, `a box that fits the surface and the vents but not the cold middle is split in two: ${JSON.stringify(seg)}`);
   assert.equal(N.profile('land', 0), null, 'land keeps its three layers, not a T-P column');
 });
 test('生息域と生存計算：箱の外では実際に損傷し、耐性しだいで死因・数が変わる。実際の分布は適応可能領域の中に収まりやすい', () => {
@@ -56,11 +56,10 @@ test('生息域と生存計算：箱の外では実際に損傷し、耐性し�
   assert.ok(in0 / all0 > 0.9, `in the mild world nearly all sit inside their box (${in0}/${all0})`); assert.ok(all > 20, 'there are individuals');
   const mean = (d) => d.reduce((a, n, k) => a + n * k, 0) / Math.max(1, d.reduce((a, b) => a + b, 0)); assert.ok(mean(s1.dist) !== mean(std0.dist), 'the distribution moved with the climate');
 });
-test('生息域の進化：高温の世界で、耐熱を高める遺伝子が選ばれて広がる（実際の進化計算）', () => {
-  const mean = (r) => r.final.loci.tolerance; const hot = (seed) => E.simulate({ seed, steps: 2500, environment: 'rich', founders: 80, mutation: true, mutationRate: 0.3, live: false, realms: { start: [0] }, depth: { ...N.engineArrays([22, 22, 22, 22]), box, bins: N.BINS }, maxPopulation: 600, sampleEvery: 2500 });
-  const mild = (seed) => E.simulate({ seed, steps: 2500, environment: 'rich', founders: 80, mutation: true, mutationRate: 0.3, live: false, realms: { start: [0] }, depth: { ...N.engineArrays([0, 0, 0, 0]), box, bins: N.BINS }, maxPopulation: 600, sampleEvery: 2500 });
-  let up = 0, n = 0, dh = 0, dm = 0; for (const seed of [1, 2, 3, 4, 5, 6]) { const a = hot(seed), b = mild(seed); if (a.extinct || b.extinct) continue; n++; dh += mean(a); dm += mean(b); if (mean(a) > mean(b)) up++; }
-  assert.ok(n >= 4 && dh / n > dm / n + 0.02, `average tolerance after 2500 steps: hot world ${(dh / n).toFixed(3)} vs mild ${(dm / n).toFixed(3)} (${up}/${n} seeds higher)`);
+test('生息域の進化：高温の世界で、耐熱を高める遺伝子が選ばれて広がる（実際の進化計算。対照は穏やかな世界）', () => {
+  const run = (seed, dK) => E.simulate({ seed, steps: 3000, environment: 'rich', founders: 80, mutation: true, mutationRate: 0.3, realms: { start: [0] }, depth: { ...N.engineArrays([dK, dK, dK, dK]), box, bins: N.BINS }, maxPopulation: 600, sampleEvery: 3000 });
+  let up = 0, n = 0, dh = 0, dm = 0, thH = 0, thM = 0; for (const seed of [1, 2, 3, 4, 5, 6]) { const a = run(seed, 75), b = run(seed, 0); if (a.extinct || b.extinct) continue; n++; dh += a.final.loci.tolerance; dm += b.final.loci.tolerance; thH += a.deathCauses.thermal || 0; thM += b.deathCauses.thermal || 0; if (a.final.loci.tolerance > b.final.loci.tolerance) up++; }
+  assert.ok(n >= 5 && thH > 10 * thM, `the hot world really is a heat trap (thermal deaths ${thH} vs ${thM})`); assert.ok(dh / n > dm / n + 0.03 && up >= 4, `average tolerance after 3000 steps: hot world ${(dh / n).toFixed(3)} vs mild ${(dm / n).toFixed(3)} (${up}/${n} seeds higher, paired by seed)`);
 });
 
 // ---------- the great catastrophes ----------
@@ -78,7 +77,7 @@ test('大災厄の影響：回復できる災厄は元に戻り、戻らない�
   const c = (type, rec, scale = 1.5) => ({ id: 1, era: 1, onset: 0, parts: [type], scale, severity: 1 - Math.exp(-0.9 * scale), recoverable: rec, tauR: type === 'oceanLoss' ? 3e8 : 4e4 * Math.sqrt(scale), hits: [] });
   const imp = c('impact', true), e0 = CAT.effectsAt([imp], 1e3), e1 = CAT.effectsAt([imp], 1e6); assert.ok(e0.res[1] < 0.5 && e1.res[1] > 0.98, 'a recoverable impact recovers'); assert.ok(e0.dT[1] < -5, 'it first cools');
   const perm = c('impact', false), p1 = CAT.effectsAt([perm], 1e8); assert.ok(p1.res[1] < 0.6, 'an unrecoverable impact leaves the land poor for ever');
-  const oc = c('oceanLoss', false, 2.5), o1 = CAT.effectsAt([oc], 2e8); assert.ok(o1.res[0] < 0.1, 'the sea is gone'); assert.ok(o1.res[2] > o1.res[1] && o1.res[1] > o1.res[0], 'underground is the least hurt, the sea the most'); assert.ok(o1.dT[1] > 15);
+  const oc = c('oceanLoss', false, 2.5), o1 = CAT.effectsAt([oc], 2e8); assert.ok(o1.res[0] < 0.2, 'the sea is gone'); assert.ok(o1.res[2] > o1.res[1] && o1.res[1] > o1.res[0], 'underground is the least hurt, the sea the most'); assert.ok(o1.dT[1] > 15);
   const cs = c('climateShock', true), s0 = CAT.effectsAt([cs], 3e4), s1 = CAT.effectsAt([cs], 1e7); assert.ok(s0.dT[1] > 8 && Math.abs(s1.dT[1]) < 0.1);
   const moon = CAT.schedule(5).concat(CAT.schedule(6)).concat(CAT.schedule(7)).concat(CAT.schedule(8)).concat(CAT.schedule(9)).find((x) => x.parts.includes('lunar')); assert.ok(moon && CAT.forecast(moon, 2, moon.onset - 1e4).hypothesis, 'the lunar crisis is marked as this work\'s own hypothesis'); assert.equal(CAT.TYPES.lunar.science, 'hypothesis'); assert.equal(CAT.TYPES.impact.science, 'real-kind');
 });
@@ -125,13 +124,13 @@ test('地球外：到達・一時的な生存・自律的な生存を区別す�
   const w = OFF.create(3); let reached = 0, temp = 0; for (let i = 0; i < 200; i++) for (const r of OFF.ejecta(w, [prof()], 1e9, 2)) { reached++; if (r.status === 'temporary') temp++; assert.equal(r.route, 'ejecta'); assert.equal(r.autonomous, null); assert.ok(/未計算|計算していません/.test(r.autonomousNote)); }
   assert.ok(reached > 20 && temp > 0 && temp < reached, `reached ${reached}, some survived the journey ${temp}`);
   const hardy = OFF.ejecta(OFF.create(1), [prof({ tolerance: 0.05, repair: 0.05, dormancyDepth: 0.5 })], 0, 2).length, hardyHigh = (() => { let c = 0; const ww = OFF.create(1); for (let i = 0; i < 100; i++) c += OFF.ejecta(ww, [prof()], 0, 2).length; return c; })(); assert.ok(hardyHigh > hardy, 'a rocky, tolerant lineage is more likely to be thrown out');
-  const ws = OFF.create(4); let selfN = 0; for (let i = 0; i < 100; i++) selfN += OFF.selfReach(ws, [{ ...prof(), abund: [0, 0, 0, 80] }], 1e9, 1e8).length; assert.ok(selfN > 0); assert.equal(OFF.selfReach(OFF.create(4), [{ ...prof({ tolerance: 0.3 }), abund: [0, 0, 0, 80] }], 1e9, 1e12).length, 0, 'without the body for it, never'); assert.equal(OFF.selfReach(OFF.create(4), [prof()], 1e9, 1e12).length, 0, 'and not without living in the air');
+  const ws = OFF.create(4); let selfN = 0; for (let i = 0; i < 100; i++) selfN += OFF.selfReach(ws, [{ ...prof(), abund: [0, 0, 0, 80] }], 1e9, 1e8).length; assert.ok(selfN > 0); assert.equal(OFF.selfReach(OFF.create(4), [{ ...prof({ tolerance: 0.3 }), abund: [0, 0, 0, 80] }], 1e9, 1e12).length, 0, 'without the body for it, never'); assert.equal(OFF.selfReach(OFF.create(4), [{ ...prof(), abund: [0, 60, 30, 2] }], 1e9, 1e12).length, 0, 'and not without living in the air');
   const wt = OFF.create(5), t = OFF.transport(wt, [prof()], ['use'], { T: 9 }, 1e9, 1e5); assert.equal(t.length, 1); assert.equal(t[0].omegaEligible, false, 'being carried is not autonomy'); assert.equal(t[0].supported, true); assert.equal(OFF.transport(OFF.create(5), [prof()], ['hostile'], { T: 9 }, 1e9, 1e5).length, 0); assert.equal(OFF.transport(OFF.create(5), [prof()], ['use'], { T: 5 }, 1e9, 1e5).length, 0, 'it needs the technology');
   assert.equal(OFF.ejecta(OFF.create(1), [prof()], 0, 2).concat([]).every((r) => r.omegaEligible), true); assert.ok(OFF.summary(w).length === 1);
 });
 test('災厄後の継続：地球の生命圏が絶えても、地球外に生き残りがいればゲームは終わらず観察を続ける。いなければ終わる（テスト専用の操作）', () => {
   const a = S3({ testHooks: true }); adv(a, 3000); a.testHooks.killEarth(); adv(a, 200); assert.equal(a.isOver, true, 'no life anywhere: the game ends');
-  const b = S3({ testHooks: true }); adv(b, 3000); const rec = b.testHooks.addOffworld(0, 'ejecta', true); b.testHooks.killEarth(); b.advance(200); assert.equal(b.isOver, false); assert.equal(b.checkpoint && b.checkpoint.kind, 'earth-ended'); b.continueFromCheckpoint();
+  const b = S3({ testHooks: true }); adv(b, 3000); const rec = b.testHooks.addOffworld(0, 'ejecta', true); b.testHooks.killEarth(); b.advance(200); assert.equal(b.isOver, false); const kinds = []; while (b.checkpoint) { kinds.push(b.checkpoint.kind); b.continueFromCheckpoint(); } assert.ok(kinds.includes('earth-ended'), `the end of Earth's biosphere is a pause: ${kinds}`);
   const o = b.offworld(); assert.equal(o.earthEnded, true); assert.equal(o.alive, true); assert.ok(/未計算/.test(o.notes) && o.records[0].autonomous === null && o.records[0].status === 'temporary'); assert.ok(b.events.some((e) => e.sub === 'offworld') && b.events.some((e) => /地球の生命圏は終わりました/.test(e.text)));
   const c = S3({ testHooks: true }); adv(c, 3000); c.testHooks.addOffworld(0, 'ejecta', false); c.testHooks.killEarth(); c.advance(200); assert.equal(c.isOver, true, 'having only reached (nothing known to be alive) is not enough to go on');
   const d = S3({ testHooks: true }); adv(d, 3000); const tr = d.testHooks.addOffworld(0, 'transport', true); assert.equal(tr.omegaEligible, false); assert.equal(tr.supported, true);

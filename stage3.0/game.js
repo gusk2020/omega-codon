@@ -302,7 +302,7 @@
         const bgAlive = bg && BG.summary(bg).some((g) => !g.extinct);
         if (st.population === 0 && !bgAlive) {
           if (S3 && OFF.aliveOutside(off)) { // the Earth's biosphere is gone but something that left it is still alive: the game goes on (observation only)
-            if (!tb.earthEnded) { tb.earthEnded = true; addEvent('world', '地球の生命圏は終わりました。地球の外へ出て一時的に生き残った系統がいるので、観察は続きます（宇宙での生存は未計算）'); if (!game.checkpoint) game.checkpoint = { t: st.t, kind: 'earth-ended' }; }
+            if (!tb.earthEnded) { tb.earthEnded = true; addEvent('world', '地球の生命圏は終わりました。地球の外へ出て一時的に生き残った系統がいるので、観察は続きます（宇宙での生存は未計算）'); msQueue.push({ cpKind: 'earth-ended', kind: 'earth-ended' }); popMilestone(); }
           } else game.over = true;
         }
       }
@@ -310,7 +310,7 @@
     game.topIndividuals = (n = 5) => live.individuals().sort((a, b) => b.age - a.age).slice(0, n).map((x) => ({ ...x, born: live.t - x.age, name: creatures[x.lin].name, role: roleOf(x.lin) }));
     game.records = () => creatures.map((c, i) => ({ lin: i, name: c.name, role: roleOf(i), recordAge: Math.max(recordAge[i].age, live.lineageDetail()[i].maxAgeDead), holder: recordAge[i].id, aliveNow: live.lineageDetail()[i].aliveMaxAge })).filter((r, i) => !v2 || ever[i]);
     // Milestones of the long history (a warning, a catastrophe beginning, its aftermath) each pause the game like any checkpoint. If several fall together they are shown one after another.
-    function popMilestone() { if (game.checkpoint || !msQueue.length) return; const m = msQueue.shift(); game.checkpoint = { t: live.t, kind: m.kind === 'warning' ? 'warning' : m.kind === 'onset' ? 'catastrophe' : 'aftermath', ms: m, years: wm.years }; }
+    function popMilestone() { if (game.checkpoint || !msQueue.length) return; const m = msQueue.shift(); game.checkpoint = { t: live.t, kind: m.cpKind || (m.kind === 'warning' ? 'warning' : m.kind === 'onset' ? 'catastrophe' : 'aftermath'), ms: m, years: wm.years }; }
     function resolveCheckpoint() { if (game.checkpoint.kind === 'interval') nextCp += cp.every; game.checkpoint = null; popMilestone(); }
     function raiseMilestones() { if (wm && wm.pendingMs && wm.pendingMs.length) { for (const m of wm.pendingMs.splice(0)) msQueue.push(m); popMilestone(); } }
     game.continueFromCheckpoint = () => { if (!game.checkpoint) return false; game.log.push({ t: live.t, kind: 'continue' }); resolveCheckpoint(); return true; };
@@ -427,6 +427,18 @@
         limits: ['跳躍中の進化・個体の老化は計算していない（省略した世代の数は推定値で、進化の量ではない）', '個体は記録された最長寿命を超える期間は生き延びないものとして子孫に入れ替える', '数が減り続けていた系統は、その減少が続くとして絶滅と判定する（窓の最後の4分の1が最初の半分未満のときだけ）。増加は外挿しない', '跳躍の長さは世界モデルの変化量と出来事の期待数で決まる（収束はテストで確認）'],
         recent: tb.leapLog.slice(-12) };
     };
+    // The temperature x pressure habitat, all of it computed: the columns (shifted by the climate and any catastrophe), each lineage's tolerance box from its evolved traits,
+    // where the individuals actually are (depth bins), and which bins suit the lineage being controlled.
+    game.habitatInfo = (lin = controlled) => {
+      if (!S3) return null; const dist = live.depthDist(), means = lineageTraitMeans(), amb = WORLD.ambient(wm), ce = WORLD.catEffects(wm), bx = NICHE.makeBox(E);
+      const dK = [0, 1, 2, 3].map((r) => amb.warmSolar + amb.warmCiv + (ce ? ce.dT[r] : 0));
+      const realms = NICHE.REALM_IDS.map((id, r) => { const prof = NICHE.profile(id, dK[r]); return prof ? { id, r, T: prof.T, P: prof.P, res: prof.res, dK: dK[r] } : null; });
+      const boxes = creatures.map((c, i) => { const m = means[i]; if (!m) return null; const o = new Float64Array(4), d = new Float64Array(4); bx(m.mean, false, o); bx(m.mean, true, d); return { active: Array.from(o), dormant: Array.from(d), count: m.count }; });
+      const suit = boxes[lin] ? realms.map((rl) => (rl ? NICHE.suitability(boxes[lin].active, rl) : null)) : null;
+      return { realms, dK, boxes, dist, suit, segments: suit ? suit.map((x) => (x ? NICHE.segments(x) : null)) : null, controlled: lin, linkedToEvolution: true,
+        note: '箱（適応可能領域）は、いまの系統の平均的な形質（耐性・代謝・修復・休眠）から計算した許容範囲です。点は、実際にその深さ・高さにいる個体です。箱の外の場所では毎ステップ損傷を受けます。箱の中心は進化しません（広さだけ進化します）。温度と圧力の柱は、ゲーム上の仮定（実際の海・地殻・大気をなぞった形）です。' };
+    };
+    game.rankProgress = () => { const l = game.rank.lineages.find((x) => x.lin === controlled); return l ? RK.progress(l, l.metrics) : null; };
     game.strategies = () => strategies.slice();
     // What the controlled lineage faces: danger per realm (0..1) from capture hazard, damage and habitat loss, and the overall level.
     game.threat = () => {
