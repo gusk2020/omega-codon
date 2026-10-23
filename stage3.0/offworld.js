@@ -58,5 +58,5 @@
   // every lineage with something still alive out there (temporary survival), as the game uses it to decide whether the game goes on
   const aliveOutside = (w) => w.records.some((r) => r.status === 'temporary');
   function summary(w) { const by = {}; for (const r of w.records) { const k = r.lin; (by[k] = by[k] || { lin: k, reached: 0, temporary: 0, routes: {} }); by[k].reached++; if (r.status === 'temporary') by[k].temporary++; by[k].routes[r.route] = (by[k].routes[r.route] || 0) + 1; } return Object.values(by); }
-  return { ROUTES, create, ejecta, selfReach, transport, aliveOutside, summary, hardiness, deepDormancy };
+  return { ROUTES, create, add, ejecta, selfReach, transport, aliveOutside, summary, hardiness, deepDormancy };
 });

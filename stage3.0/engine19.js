@@ -727,7 +727,8 @@
       { const pf = patches.reduce((a, p) => a + p.prey / p.preyCap, 0) / patches.length; eco.sum += pf; eco.n++; if (pf < eco.min) eco.min = pf; if (t <= 400) { eco.earlySum += pf; eco.earlyN++; } }
       if (LT) { const cnt = new Array(o.lineageCount).fill(0); for (const x of pop) cnt[x.lin]++; for (let k = 0; k < cnt.length; k++) if (cnt[k] === 0 && linExtinctAt[k] === null) linExtinctAt[k] = t; }
       if (pop.length === 0 && extinctAt === null) extinctAt = t;
-      if (t % o.sampleEvery === 0 || t === o.steps || pop.length === 0) sample(t);
+      if (t % o.sampleEvery === 0 || t === o.steps || (pop.length === 0 && !(o.continueWhenEmpty && history.length && history[history.length - 1].population === 0))) sample(t); // an empty arena that keeps running is sampled once, not every step
+      if (o.live && history.length > 2000) history.splice(0, history.length - 1500); // a live run has no end: keep the recent samples only
       pendingDisaster = 0;
       return true;
     };
@@ -753,6 +754,7 @@
           for (const k of ['cap', 'subsidy']) if (c[k]) for (let l = 0; l < NLN; l++) if (c[k][l]) for (let i = 0; i < CV[k][l].length; i++) CV[k][l][i] = c[k][l][i];
         },
         setStance(lin, code) { if (!CV) throw new Error('civ option is off'); CV.stance[lin] = code; },
+        clear() { for (const x of pop) ledger.lostAtDeath += x.energy; pop = []; }, // remove every individual (used by tests to stage an extinction)
         setDepth(d) { if (!DP) throw new Error('depth option is off'); for (const k of ['T', 'P', 'res']) if (d[k]) for (let r = 0; r < d[k].length; r++) for (let b = 0; b < d[k][r].length; b++) DP[k][r][b] = d[k][r][b]; },
         depthDist() { if (!DP) return null; const out = DP.act.map((a) => (a ? Array.from({ length: NLN }, () => new Array(DP.bins).fill(0)) : null)); for (const x of pop) if (out[x.patch]) out[x.patch][x.lin][x.zb]++; return out; },
         civTake() { // what the pressure did since the last call: attack power put out, individuals taken, damage dealt (per lineage, per realm)

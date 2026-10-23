@@ -346,6 +346,8 @@
     }
     function offLog(recs) { for (const r of recs) { addEvent('world', `🚀 ${creatures[r.lin].name}：${OFF.ROUTES[r.route].name}で地球の外へ（${r.note}）${r.status === 'temporary' ? '。一時的には生き残った。宇宙での自律的な生存は未計算' : '。到達したが生き残りは確認できなかった'}`); game.events[game.events.length - 1].sub = 'offworld'; } }
     game.offworld = () => (S3 ? { records: off.records.map((r) => ({ ...r, name: creatures[r.lin].name, routeName: OFF.ROUTES[r.route].name })), summary: OFF.summary(off), earthEnded: !!tb.earthEnded, alive: OFF.aliveOutside(off), notes: '到達と、一時的な生存だけを計算しています。宇宙での自律的な生存は未計算（未実装）です。文明の輸送はΩの条件になりません。' } : null);
+    // TEST-ONLY shortcuts (present only when the game is made with testHooks: true; never from the screens, never saved): stage an extinction of the Earth's life, or a record of life that left it.
+    if (cfg.testHooks === true) game.testHooks = { killEarth() { live.clear(); if (bg) for (const g of bg.groups) { g.extinct = true; g.B.fill(0); } }, addOffworld(lin, route = 'ejecta', temporary = true) { const r = OFF.add(off, lin, route, wm.years, 1, route === 'transport', temporary, 'テスト用に追加'); offLog([r]); return r; } };
     game.worldMarks = [];
     function worldEvent(e) {
       if (e.kind === 'cat-aftermath') { const st = live.stats(), alive = creatures.map((c, i) => (st.lineageAlive[i] > 0 ? `${c.name}${st.lineageAlive[i]}体` : null)).filter(Boolean); e = { ...e, text: `${e.text}：アリーナで生きている系統は ${alive.join('・') || 'なし'}（実際に計算した個体数）` }; }
@@ -389,7 +391,7 @@
     function lifeMean(i, st) { const s = st.lineageStats[i]; return s.deaths ? s.lifeSum / s.deaths : 25; }
     function leapCheck() {
       if (!TB || live.t < LEAP_FROM || game.pending || game.checkpoint || isOver()) return;
-      const st = live.stats(), genSteps = clock.winGenTime || 25, Wreq = Math.max(400, Math.min(4000, Math.round(8 * genSteps)));
+      const st = live.stats(), genSteps = clock.winGenTime || 25, Wreq = st.population === 0 ? DETECT_EVERY : Math.max(400, Math.min(4000, Math.round(8 * genSteps))); // with nobody in the arena there is nothing to simulate between leaps
       if (live.t - tb.lastLeapT < Wreq) return;
       const blocker = leapBlocker(live.individuals(), (l) => lifeMean(l, st)); // an exceptionally long-lived individual is never skipped over: while one is alive, time runs step by step
       if (blocker) { tb.blocked++; tb.lastBlocker = { lin: blocker.lin, age: blocker.age, t: st.t }; return; }
@@ -474,7 +476,7 @@
       const st = live.stats(), total = st.population; updateClock(st);
       if (v2) for (let i = 0; i < creatures.length; i++) { peakLin[i] = Math.max(peakLin[i], st.lineageAlive[i]); for (let r = 0; r < 4; r++) peakRealm[i][r] = Math.max(peakRealm[i][r], st.realmAlive[r][i]); }
       last.peak = Math.max(last.peak, total);
-      if (st.disasters > last.lastDisasters) { addEvent('disaster', `災害が起きた（累計${st.disasters}回）`); last.lastDisasters = st.disasters; }
+      if (st.disasters > last.lastDisasters) { if (!TB || st.population > 0) addEvent('disaster', `災害が起きた（累計${st.disasters}回）`); last.lastDisasters = st.disasters; }
       for (let i = 0; i < creatures.length; i++) if (st.lineageAlive[i] === 0 && !last.lineageDead[i] && creatures.length > 1 && (!v2 || peakLin[i] >= 5)) { last.lineageDead[i] = true; extinctAt[i] = st.t; addEvent('lineage', `${creatures[i].name}${tag(i)}の系統が絶えた${tb && tb.gapNote[i] ? '（時間の跳躍の間に、個体数の減少が続くと外挿して絶滅と判定）' : ''}`); if (tb) tb.gapNote[i] = false; }
       if (creatures.length > 1 && total > 0) { let d = 0; for (let i = 1; i < creatures.length; i++) if (st.lineageAlive[i] > st.lineageAlive[d]) d = i; if (d !== last.dominant && (!TB || last.dominant < 0 || st.lineageAlive[last.dominant] === 0 || st.lineageAlive[d] >= 1.3 * st.lineageAlive[last.dominant])) { if (last.dominant >= 0) addEvent('lineage', `最大の系統が${creatures[last.dominant].name}${tag(last.dominant)}から${creatures[d].name}${tag(d)}に交代`); last.dominant = d; } }
       if (total > 0 && total < 30 && !last.crisis) { last.crisis = true; addEvent('crisis', `個体数が${total}体まで減った`); }
@@ -569,7 +571,7 @@
       return live.t;
     };
     Object.defineProperty(game, 't', { get: () => live.t });
-    game.save = () => ({ v: TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
+    game.save = () => ({ v: S3 ? 7 : TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
     // Only values the engine actually computes: living counts, their change over about the last 100 steps, extinction time,
     // and the catches recorded on individuals that are still alive. The prey is a shared background resource, not a lineage,
     // so there is no predator-prey relation between lineages to report; the report says so instead of inventing one.
