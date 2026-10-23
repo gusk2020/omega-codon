@@ -447,13 +447,15 @@
     const V31 = o.v31 ? { free: o.v31.free !== false, evo: o.v31.evo !== false, tgt: o.v31.tgt !== false } : null;
     const FREE = !!(V31 && V31.free && RM);
     const TG = V31 && V31.tgt ? { plant: zeros(), animal: zeros() } : null;
-    const EV = V31 && V31.evo ? { list: [], nextId: 1, rate: { exchange: 0.0004, fusion: 0.0003, sep: 0.02 }, counts: Array.from({ length: NLN }, () => ({ strengthen: 0, weaken: 0, newcap: 0, alter: 0, loss: 0, behaviour: 0, exchange: 0, fusion: 0, separation: 0 })), rand: null } : null;
+    const EV = V31 && V31.evo ? { list: [], nextId: 1, rate: { exchange: 0.0004, fusion: 0.0003, sep: 0.02, ...(o.v31.rates || {}) }, counts: Array.from({ length: NLN }, () => ({ strengthen: 0, weaken: 0, newcap: 0, alter: 0, loss: 0, behaviour: 0, exchange: 0, fusion: 0, separation: 0 })), rand: null } : null;
     if (EV) EV.rand = rng((o.seed * 7919) ^ 0x3C6EF3);
     const frRand = V31 ? rng((o.seed * 104729) ^ 0x7F4A7C) : null;
     if (EV) {
       EV.t = 0; const CAP = 400, EVN = 5;
-      const addEvent = (ev) => { // keeps the list bounded: a lost event makes room for a new one; counts are exact regardless
-        if (EV.list.length >= CAP) { const i = EV.list.findIndex((e) => e.status === 'lost' || e.status === 'faded'); if (i < 0) return null; EV.list.splice(i, 1); }
+      const CAPS = { mutation: 200, exchange: 100, fusion: 60, separation: 40 };
+      const addEvent = (ev) => { // each kind has its own room, so a flood of one cannot push out the rare ones; a lost event makes room for a new one of its kind; counts are exact regardless
+        const same = EV.list.filter((e) => e.kind === ev.kind);
+        if (same.length >= CAPS[ev.kind]) { const old = same.find((e) => e.status === 'lost' || e.status === 'faded'); if (!old) return null; EV.list.splice(EV.list.indexOf(old), 1); }
         ev.id = EV.nextId++; ev.t = EV.t; ev.status = 'occurred'; ev.carriers = 0; ev.peak = 0; EV.list.push(ev); return ev;
       };
       const tagged = (parent, child, ev) => { if (ev) child.tags = (parent.tags || []).concat(ev.id).slice(-8); else if (parent.tags) child.tags = parent.tags; return child; };
@@ -669,10 +671,10 @@
           if (x.present && p.prey - p.hid >= 1) {
             huntEncounters++;
             const memF = memOn ? x.M : 0;
-            const ta = TG ? TG.animal[x.lin] : 0, tmul = ta === 1 ? (lo[L.predation] >= 0.3 ? 1 + 0.25 * lo[L.predation] : 0.85) : ta === 2 ? 0.75 : ta === 3 ? 0.6 : 1;
+            const ta = TG ? TG.animal[x.lin] : 0, tmul = ta === 1 ? (lo[L.predation] >= 0.3 ? 1 + 0.3 * lo[L.predation] : 0.85) : ta === 2 ? 0.75 : ta === 3 ? 0.6 : 1;
             const pc = clamp(1.5 * lo[L.predation] * (0.4 + 0.6 * Math.min(1.2, metab)) * (1 + 0.8 * memF) * o.captureScale * tmul, 0, 0.95);
             if (rand() < pc) {
-              gain += HUNT_GAIN; ledger.intakePrey += HUNT_GAIN; lstat.intake[x.lin] += HUNT_GAIN; lstat.catches[x.lin]++; p.prey -= (TG && TG.animal[x.lin] === 2 ? 0.6 : 1); catches++; x.catches++; x.present = false;
+              const hg = HUNT_GAIN * (ta === 1 && lo[L.predation] >= 0.3 ? 1.25 : 1); gain += hg; ledger.intakePrey += hg; lstat.intake[x.lin] += hg; lstat.catches[x.lin]++; p.prey -= (ta === 2 ? 0.75 : 1); catches++; x.catches++; x.present = false;
               if (o.memory) x.M += lo[L.memoryLearn] * (x.O - x.M) * 0.2;
             }
           }
