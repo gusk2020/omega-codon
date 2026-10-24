@@ -488,7 +488,7 @@
         if (same.length >= CAPS[ev.kind]) { const old = same.find((e) => e.status === 'lost' || e.status === 'faded'); if (!old) return null; EV.list.splice(EV.list.indexOf(old), 1); }
         ev.id = EV.nextId++; ev.t = EV.t; ev.status = 'occurred'; ev.carriers = 0; ev.peak = 0; EV.list.push(ev); return ev;
       };
-      const tagged = (parent, child, ev) => { if (ev) child.tags = (parent.tags || []).concat(ev.id).slice(-8); else if (parent.tags) child.tags = parent.tags; return child; };
+      const tagged = (parent, child, ev) => { if (ev) { ev.par = parent.tags && parent.tags.length ? parent.tags[parent.tags.length - 1] : null; child.tags = (parent.tags || []).concat(ev.id).slice(-8); } else if (parent.tags) child.tags = parent.tags; return child; };
       // mutation: every one is counted by kind; the notable ones (a new capability, or a large change in a trait) are followed as events
       EV.afterMutation = (x, child, lg, nT) => {
         const c = EV.counts[x.lin]; for (const k of lg) c[k]++;
@@ -516,8 +516,22 @@
         return out;
       };
       // Horizontal gene transfer: ONE gene at a time, never a finished organ. Known mainly in microbes; the game lets it happen rarely in anything, and far more often during an infection (a virus carries it).
+      // Heritage (Stage 4.0): what an extinct lineage left behind, drifting as relics that survivors may pick up. Taking one can fail, and a relic fades. The way a lineage lives
+      // (scavenging, living beside others, avoiding them) changes how often it finds one, but nobody chooses WHICH relic is taken, or hands one over.
+      EV.pool = []; EV.heritageLog = []; EV.heritageN = 0;
+      const geneOfPlain = (pl) => ({ k: 0, prom: pl.prom, sens: pl.sens ? pl.sens.slice() : null, len: pl.len || 1, on: true, eff: pl.eff.map(([n, w]) => [TRAITS.findIndex((l) => l[0] === n) >= 0 ? TRAITS.findIndex((l) => l[0] === n) : NL, w]) });
+      EV.addHeritage = (items) => { for (const it of items) { if (EV.pool.length >= 80) EV.pool.shift(); const rec = { id: 'h' + (++EV.heritageN), from: it.from, kind: it.kind || 'function', plain: it, gene: geneOfPlain(it), born: EV.t, status: 'floating', takers: 0, takenBy: [], takenT: null, fromWorld: !!it.fromWorld }; EV.pool.push(rec); EV.heritageLog.push(rec); if (EV.heritageLog.length > 200) EV.heritageLog.shift(); } };
+      const tryHeritage = (r) => {
+        const it = EV.pool[Math.floor(EV.rand() * EV.pool.length)]; if (!it) return;
+        if (EV.rand() >= Math.min(1, 0.3 * Math.exp(-(EV.t - it.born) / 1500) * (r.load > 0 ? 2 : 1))) return; // it may simply fail
+        const g = cloneGene(it.gene); g.prom = r.genome.genes[Math.floor(EV.rand() * r.genome.genes.length)].prom; if (it.kind === 'symbiont') g.sym = true;
+        EV.counts[r.lin].exchange++; const ev = addEvent({ kind: 'exchange', sub: it.kind === 'symbiont' ? 'heritage-symbiont' : 'heritage', via: 'relic', lin: r.lin, from: it.from, heritage: it.id, trait: null, delta: 0 });
+        const ng = withGenes(r, [g], ev); if (it.kind === 'symbiont') ng.sym = true; r.genome = ng; developInto(r, devSignals(patches[r.patch], r.damage));
+        it.takers++; if (it.status === 'floating') { it.status = 'taken'; it.takenT = EV.t; } if (!it.takenBy.includes(r.lin)) it.takenBy.push(r.lin);
+      };
       const tryExchange = () => {
         const r = pop[Math.floor(EV.rand() * pop.length)]; if (r.genome.genes.length >= MAX_GENES) return;
+        if (EV.pool.length) { const sf = TG ? [1, 1.6, 1.3, 0.6, 1][TG.animal[r.lin]] : 1; if (EV.rand() < 0.25 * sf) { tryHeritage(r); return; } }
         const d = findPartner(r, false); if (!d) return;
         const take = (r.load > 0 ? 4 : 1) * (r.genome.genes.length <= 10 ? 1 : 0.5) * (d.lin !== r.lin ? 0.5 : 1);
         if (EV.rand() >= Math.min(1, take * 0.25)) return;
@@ -529,7 +543,7 @@
       // Fusion (endosymbiosis-like): a body that can engulf (predation) and does not destroy what it engulfs (low immune reaction) keeps a partner's genes as an internalised symbiont. Rare in nature (mitochondria, plastids); an extension here.
       const tryFusion = () => {
         const ai = Math.floor(EV.rand() * pop.length), a = pop[ai]; if (a.age < MATURITY_AGE || a.energy < 1.0 || a.genome.genes.length > MAX_GENES - 3) return;
-        if (EV.rand() >= clamp(a.ph[L.predation] * (1 - 0.6 * a.ph[L.immune]), 0, 1)) return;
+        if (EV.rand() >= clamp(a.ph[L.predation] * (1 - 0.6 * a.ph[L.immune]) * (TG && (TG.plant[a.lin] === 2 || TG.animal[a.lin] === 2) ? 1.5 : 1), 0, 1)) return; // living beside others (symbiosis / coexistence) makes taking a partner in more likely
         let b = null, bi = -1; for (let tries = 0; tries < 8; tries++) { const k = Math.floor(EV.rand() * pop.length), c = pop[k]; if (sameSpot(a, c) && c.lin !== a.lin) { b = c; bi = k; break; } }
         if (!b) return;
         const genes = takeGenes(b, 2, true); if (!genes.length) return;
@@ -539,7 +553,8 @@
         causes.fusion = (causes.fusion || 0) + 1; lstat.deaths[b.lin]++; lstat.lifeSum[b.lin] += b.age; lstat.causes[b.lin].fusion = (lstat.causes[b.lin].fusion || 0) + 1; lifeSumRun += b.age; pushDeath([b.age, b.active, b.internal, b.births, b.O, b.Mpeak > 0 ? b.M / b.Mpeak : null, b.hunts, b.catches, b.imPeak > 0 ? b.imS / b.imPeak : null, b.infections, b.imPeak]);
         pop[bi] = pop[pop.length - 1]; pop.pop(); developInto(a, devSignals(patches[a.patch], a.damage));
       };
-      const settle = (t) => { // established = still carried by at least 3 individuals 150 steps on; lost = carried by nobody
+      const settle = (t) => {
+        for (const it of EV.pool) if (it.takers === 0 && t - it.born > 4000) it.status = 'decayed'; EV.pool = EV.pool.filter((it) => it.status !== 'decayed'); // established = still carried by at least 3 individuals 150 steps on; lost = carried by nobody
         const pending = EV.list.filter((e) => e.status === 'occurred' || e.status === 'established'); if (!pending.length) return;
         const cnt = new Map(); for (const x of pop) { const tg = x.genome.tags; if (tg) for (const id of tg) cnt.set(id, (cnt.get(id) || 0) + 1); }
         for (const e of pending) {
@@ -900,6 +915,12 @@
         sampleGenome(lin) { // the genome of the individual with the median physical length, as a strip of genes for display
           const list = pop.filter((x) => x.lin === lin); if (!list.length) return null; list.sort((a, b) => codonStats(a.genome).Lp - codonStats(b.genome).Lp); const g = list[list.length >> 1].genome, cd = codonStats(g);
           return { stats: { ...cd, L0: codonL0() }, genes: g.genes.map((x) => ({ len: x.len, len0: x.len0 || x.len, on: x.on, reg: x.k !== 0, sym: !!x.sym, eff: x.k === 0 ? x.eff.map(([t, w]) => [TRAITS[t] ? TRAITS[t][0] : 'storage', w]) : [] })) };
+        },
+        addHeritage(items) { if (!EV) throw new Error('v31 evo option is off'); EV.addHeritage(items); },
+        heritage() { return EV ? EV.heritageLog.map((it) => ({ id: it.id, from: it.from, kind: it.kind, born: it.born, status: it.status, takers: it.takers, takenBy: it.takenBy.slice(), takenT: it.takenT, fromWorld: it.fromWorld, eff: it.plain.eff })) : null; },
+        topGenes(lin, k = 3) { // the strongest structural genes of the individual with the median physical length: what a lineage would leave behind
+          const list = pop.filter((x) => x.lin === lin); if (!list.length) return null; list.sort((a, b) => codonStats(a.genome).Lp - codonStats(b.genome).Lp); const g = list[list.length >> 1].genome;
+          return g.genes.filter((x) => x.k === 0 && x.on && x.eff.length).sort((a, b) => Math.max(...b.eff.map((e) => Math.abs(e[1]))) - Math.max(...a.eff.map((e) => Math.abs(e[1])))).slice(0, k).map((x) => ({ prom: x.prom, sens: x.sens ? x.sens.slice() : null, len: x.len, kind: x.sym ? 'symbiont' : 'function', eff: x.eff.map(([t, w]) => [TRAITS[t] ? TRAITS[t][0] : 'storage', w]) }));
         },
         routes() { return offPairs ? offPairs.map((a) => a.slice()) : null; }, // per lineage: crossings OUTSIDE the reference roads, indexed from*4+to
         targets() { return TG ? { plant: TG.plant.slice(), animal: TG.animal.slice() } : null; },

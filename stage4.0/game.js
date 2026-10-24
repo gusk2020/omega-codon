@@ -4,7 +4,7 @@
   'use strict';
   const NODE = typeof module === 'object' && typeof require === 'function';
   const RK = NODE ? require('./rank') : globalThis.OmegaRank;
-  const DISH = NODE ? require('./dish') : globalThis.OmegaDish;
+  const DISH = NODE ? require('./dish') : globalThis.OmegaDish, CDX = NODE ? require('./codex4') : globalThis.OmegaCodex;
   const OFF = NODE ? require('./offworld') : globalThis.OmegaOffworld, NICHE = NODE ? require('./niche') : globalThis.OmegaNiche, WORLD = NODE ? require('./world') : globalThis.OmegaWorld, CIVM = NODE ? require('./civilization') : globalThis.OmegaCiv, HIST = NODE ? require('./earthhistory') : globalThis.OmegaHistory, BG = NODE ? require('./background') : globalThis.OmegaBackground, AD = NODE ? require('./adaptation') : globalThis.OmegaAdaptation;
   // The game layer. It owns no science: it picks founders, advances the Stage 1.7 engine, notices notable things, and offers the
   // player a small number of environment-wide interventions. Nothing here favours a lineage or a trait.
@@ -135,7 +135,7 @@
       founderGenomes: creatures.map((c, i) => genomeOf(i)), sampleEvery: 100, live: true,
       ...(v2 ? { founderCounts: counts, niche: { slots: NICHE_SLOTS, weights: creatures.map((c) => c.niche), specialistBonus: NICHE_BONUS } } : {}),
       realms: realmsOn ? { startByLineage: creatures.map((c) => c.startRealm) } : null });
-    const game = { cfg: { creatures: focus.map((c) => c.id), rivals: rivalDefs.map((c) => c.id), seed: cfg.seed, environment, realms: realmsOn, scenario, ecology: v2 ? 'v2' : 'legacy', ...(v2 && cfg.background === false ? { background: false } : {}), ...(TB ? { time: 'adaptive' } : {}), ...(S3 ? { stage: S4 ? 4 : S31 ? 3.1 : 3, ...(cfg.testStartYears ? { testStartYears: cfg.testStartYears } : {}) } : {}), ...(cfg.checkpoint ? { checkpoint: cfg.checkpoint } : {}) }, creatures, v2, focusCount: focus.length, roleOf, autoContinuous: false, live, events: [], series: [], pending: null, effects: [], log: [], replayTo: null };
+    const game = { cfg: { creatures: focus.map((c) => c.id), rivals: rivalDefs.map((c) => c.id), seed: cfg.seed, environment, realms: realmsOn, scenario, ecology: v2 ? 'v2' : 'legacy', ...(v2 && cfg.background === false ? { background: false } : {}), ...(TB ? { time: 'adaptive' } : {}), ...(S4 && cfg.heritage ? { heritage: cfg.heritage } : {}), ...(S3 ? { stage: S4 ? 4 : S31 ? 3.1 : 3, ...(cfg.testStartYears ? { testStartYears: cfg.testStartYears } : {}) } : {}), ...(cfg.checkpoint ? { checkpoint: cfg.checkpoint } : {}) }, creatures, v2, focusCount: focus.length, roleOf, autoContinuous: false, live, events: [], series: [], pending: null, effects: [], log: [], replayTo: null };
     const extinctAt = new Array(creatures.length).fill(null);
     const lti = KEY_TRAITS.map((n) => E.TRAITS.findIndex((l) => l[0] === n));
     const off = S3 ? OFF.create(cfg.seed) : null;
@@ -364,6 +364,7 @@
     game.worldMarks = [];
     function worldEvent(e) {
       if (e.kind === 'cat-aftermath') { const st = live.stats(), alive = creatures.map((c, i) => (st.lineageAlive[i] > 0 ? `${c.name}${st.lineageAlive[i]}体` : null)).filter(Boolean); e = { ...e, text: `${e.text}：アリーナで生きている系統は ${alive.join('・') || 'なし'}（実際に計算した個体数）` }; }
+      if (S4) crisisHook(e);
       if (S3) { if (e.kind === 'impact') offLog(OFF.ejecta(off, offProfiles(), wm.years, 1)); else if (e.kind === 'cat-onset') { const c = wm.cat.find((x) => x.id === e.cat); if (c.parts.includes('impact') || c.parts.includes('lunar')) offLog(OFF.ejecta(off, offProfiles(), wm.years, (c.parts.includes('impact') ? 1 + c.severity : 0.7))); } }
       addEvent(e.kind.startsWith('civ') ? 'civ' : 'world', e.text); game.events[game.events.length - 1].sub = e.kind; game.worldMarks.push({ y: wm.years, kind: e.kind }); if (game.worldMarks.length > 300) game.worldMarks.shift(); }
     function pushEffects(st, means) {
@@ -683,7 +684,7 @@
     const KIND_JA = { mutation: '突然変異', exchange: '機能交換', fusion: '融合（共生体の内部化）', separation: '分離（共生体の放出）' };
     const SUB_JA = { strengthen: '強まった', weaken: '弱まった', newcap: '新しい働きが現れた', alter: '働きが変質した', loss: '失われた', behaviour: '行動が変わった', symbiont: '', release: '', inter: '別の系統から', intra: '同じ系統内で' };
     const TRAIT_ALL_JA = { ...TRAIT_JA, replaceRatio: '細胞の入れ替え', falsePositive: '誤認（空振り）', falseNegative: '見落とし', memoryLearn: '学習', memoryUpkeep: '記憶の維持', switchThreshold: '行動の切り替え', rhythmPeriod: '活動の周期', rhythmPhase: '活動の位相', storage: '貯蔵' };
-    const evoSeen = new Map();
+    const evoSeen = new Map(), evoY = new Map(), lineageEnds = creatures.map(() => []);
     function evoText(e, phase) {
       const nm = creatures[e.lin].name, tr = e.trait ? TRAIT_ALL_JA[e.trait] || e.trait : null;
       if (e.kind === 'mutation') { const what = e.sub === 'strengthen' ? `${tr || '体質'}が強まった` : e.sub === 'weaken' ? `${tr || '体質'}が弱まった` : e.sub === 'newcap' ? `新しい働きが加わった${tr ? '（' + tr + 'に影響）' : ''}` : e.sub === 'loss' ? '働きが失われた' : '働きが変質した'; return `${nm}：突然変異で${what}${phase === 'established' ? '（定着）' : ''}`; }
@@ -693,11 +694,12 @@
     }
     const trails = creatures.map(() => []); // each lineage's mean key traits every 200 steps: the route it has taken (a record, nothing steers by it)
     function evoNotes() {
+      if (S4) recordsTick();
       if (live.t % 200 === 0) { const mm = lineageTraitMeans(); mm.forEach((m, i) => { if (m && m.count >= 3) { trails[i].push([live.t, lti.map((k) => m.mean[k])]); if (trails[i].length > 240) trails[i] = trails[i].filter((_, j) => j % 2 === 0); } }); }
       const ev = live.evo(); if (!ev) return; let budget = 3;
       for (const e of ev.events) {
         const prev = evoSeen.get(e.id);
-        if (prev === undefined) { evoSeen.set(e.id, e.status); if (budget > 0 && (e.kind !== 'mutation' || e.sub === 'newcap') && ever[e.lin]) { budget--; addEvent('evo', evoText(e, 'occurred')); } }
+        if (prev === undefined) { evoSeen.set(e.id, e.status); evoY.set(e.id, wm ? wm.years : 0); if (budget > 0 && (e.kind !== 'mutation' || e.sub === 'newcap') && ever[e.lin]) { budget--; addEvent('evo', evoText(e, 'occurred')); } }
         else if (prev !== e.status) { evoSeen.set(e.id, e.status); if (e.status === 'established' && ever[e.lin] && (e.kind !== 'mutation' || e.sub === 'newcap' || Math.abs(e.delta) >= 0.15)) addEvent('evo', evoText(e, 'established')); }
       }
     }
@@ -745,6 +747,87 @@
       const civFraction = civ ? secOf.land.width * (civ.r1 - civ.r0) / 0.33 * 0.5 : 0, shape = DISH.omegaShape(grid, civFraction);
       const v = { ...grid, sectors: secs, civ, ranges, focus: controlled, areas: DISH.areas(grid, n), shape, t: live.t, colors: creatures.map((c) => c.color), names: creatures.map((c) => c.name), alive: st.lineageAlive.slice(), dominance: domV };
       dishCache = { t: live.t, v }; return v;
+    };
+
+    // ======== Stage 4.0: the collection, heritage, feats and the Omega verdict. Everything is READ from the simulation; none of it is fed back into it, except the heritage
+    // relics (which the engine lets survivors pick up by chance) and the player's stances. A discovery never grants an ability. ========
+    const codexMap = new Map(), featMap = new Map(); game.achievements = []; game.codexNew = []; game.featsNew = [];
+    const formSeen = new Map(), soloSteps = creatures.map(() => 0), extSteps = creatures.map(() => 0), prevAlive = creatures.map(() => 0), lastGenes = creatures.map(() => null), omegaHeld = creatures.map(() => 0);
+    const heritageSeen = new Map(), aliveAtOnset = new Map(); game.omega = null; game.heritageNote = { exported: 0 };
+    const yearsNow = () => (wm ? wm.years : 0);
+    function achieve(kind, title, text, lin, special, ref) { game.achievements.unshift({ id: game.achievements.length + 1, kind, title, text, lin, t: live.t, y: yearsNow(), bp: WORLD.bp(wm), special: !!special, ref }); if (game.achievements.length > 80) game.achievements.pop(); }
+    function discover(id, type, name, text, lin, rarity, tier) {
+      if (codexMap.has(id)) return null; const e = { id, type, name, text, t: live.t, y: yearsNow(), bp: WORLD.bp(wm), lin, lineage: creatures[lin].name, rarity, tier: tier || 0, rarityName: CDX.RARITY_NAME(rarity) }; codexMap.set(id, e); game.codexNew.push(e);
+      const special = rarity >= 0.8 || type === 'mechanism'; achieve('codex', name, `${creatures[lin].name}：${text}（${e.rarityName}）`, lin, special, id); if (special) addEvent('codex', `📖 図鑑に記録：${name}（${creatures[lin].name}）`); return e;
+    }
+    function feat(id, name, text, lin, tier) {
+      if (featMap.has(id)) return null; const e = { id, name, text, t: live.t, y: yearsNow(), bp: WORLD.bp(wm), lin, lineage: creatures[lin].name, tier: tier || 0 }; featMap.set(id, e); game.featsNew.push(e);
+      achieve('feat', name, `${creatures[lin].name}：${text}`, lin, tier >= 2, id); addEvent('codex', `🏅 生存偉業：${name}（${creatures[lin].name}）`); return e;
+    }
+    const normOf = (traits) => { const nz = (n) => TRN(n, traits[tk(n)]); return { tolerance: nz('tolerance'), metabolism: nz('metabolism'), repairRate: nz('repairRate'), dormancyDepth: 1 - nz('dormancyDepth'), predation: nz('predation'), movement: nz('movement'), immune: nz('immune'), fecundity: nz('fecundity') }; };
+    let lastRecT = -1;
+    function recordsTick() {
+      if (live.t === lastRecT) return; lastRecT = live.t; const st = live.stats(), n = creatures.length;
+      // heritage: what each lineage would leave behind is noted every 200 steps; when a lineage dies out its relics are set adrift in the water
+      if (live.t % 200 === 0) for (let i = 0; i < n; i++) if (st.lineageAlive[i] >= 5) { const gg = live.topGenes(i, 3); if (gg && gg.length) lastGenes[i] = gg; }
+      for (let i = 0; i < n; i++) { if (prevAlive[i] >= 3 && st.lineageAlive[i] === 0 && lastGenes[i]) { lineageEnds[i].push({ y: yearsNow(), t: live.t }); live.addHeritage(lastGenes[i].map((it) => ({ ...it, from: i }))); addEvent('codex', `🧬 ${creatures[i].name}が絶えた。遺伝子の断片が遺産として残った（拾われるか、消えるかは運しだい）`); achieve('heritage', '進化遺産が残った', `${creatures[i].name}の遺伝子${lastGenes[i].length}個`, i, false); lastGenes[i] = null; } prevAlive[i] = st.lineageAlive[i]; }
+      for (const h of live.heritage()) { const was = heritageSeen.get(h.id); if (was !== h.status) { heritageSeen.set(h.id, h.status); if (h.status === 'taken') { const tl = h.takenBy[0]; if (tl !== undefined) { addEvent('codex', `🧬 ${creatures[tl].name}が${creatures[h.from].name}の遺産を受け継いだ`); achieve('heritage', '進化遺産の継承', `${creatures[h.from].name}の遺伝子が${creatures[tl].name}に受け継がれた`, tl, true, h.id); } } } }
+      if (live.t % 100 !== 0) { if (live.t % 25 === 0) omegaTick(st); return; }
+      const inds = live.individuals(), H = game.habitatInfo(controlled), tot = inds.length || 1, sig = new Map();
+      for (const q of inds) { const nm = normOf(q.traits), s = CDX.formSignature(nm), k = s.key + ':' + q.lin, e = sig.get(k); if (e) e.n++; else sig.set(k, { s, lin: q.lin, n: 1 }); }
+      const living = new Map(); for (const q of inds) { const s = CDX.formSignature(normOf(q.traits)); living.set(s.key, (living.get(s.key) || 0) + 1); }
+      for (const [, e] of sig) {
+        if (e.n < 3) continue; const share = (living.get(e.s.key) || 0) / tot, rar = CDX.rarityOf(e.s.extremes, share);
+        discover(`form:${e.s.key}`, 'form', e.s.name, `体の特徴の組み合わせ「${e.s.name}」が現れた`, e.lin, rar, e.s.extremes);
+        const fs = formSeen.get(e.s.key); if (!fs) formSeen.set(e.s.key, { t: live.t, lin: e.lin, rar, max: e.n }); else { fs.max = Math.max(fs.max, e.n); if (rar >= 0.9 && fs.max >= 10 && live.t - fs.t >= 300) feat(`rare:${e.s.key}`, `希少な進化の定着：${e.s.name}`, `極めて珍しい特徴の組み合わせが、10個体以上で300ステップ以上続いた`, fs.lin, 2); }
+      }
+      const means = lineageTraitMeans(), cdn = live.codon();
+      for (let i = 0; i < n; i++) {
+        const m = means[i]; if (!m || m.count < 5) continue; const nm = normOf(m.mean);
+        for (const [t, th, text, low] of CDX.ABILITY) { const v = nm[t === 'metabolism' ? 'metabolism' : t]; if (low ? v <= th : v >= th) discover(`ability:${t}:${i}`, 'ability', text, `${creatures[i].name}の${text.replace('が極めて', 'が')}`, i, 0.55, 1); }
+        const bx = H.boxes[i]; if (bx) for (const ex of CDX.EXTREMES) if (ex.test(bx.active)) discover(`tol:${ex.id}:${i}`, 'tolerance', ex.name(bx.active), ex.text, i, 0.6, 1);
+        const c = cdn && cdn[i]; if (c && c.n >= 5) { if (c.density >= 0.9) discover(`codon:dense:${i}`, 'codon', '高密度コドン', `機能密度${c.density.toFixed(2)}（物理長${c.Lp.toFixed(0)}・機能${c.info.toFixed(0)}）`, i, 0.7, 2); if (c.Lp <= 0.8 * c.L0) discover(`codon:compact:${i}`, 'codon', 'コンパクトなコドン', `物理長が祖先より2割以上短い（${c.Lp.toFixed(0)}／${c.L0}）`, i, 0.6, 1); if (c.packed >= 0.15) discover(`codon:packed:${i}`, 'codon', '圧縮されたコドン', `展開すると${c.Le.toFixed(0)}、圧縮で${c.Lp.toFixed(0)}`, i, 0.55, 1); }
+      }
+      // mechanisms that took hold: the first established fusion, exchange, relic taken, compression or release in each lineage
+      const MECH = { fusion: ['共生体の内部化が定着', '別の系統の遺伝子を共生体として取り込んだ状態が定着した'], separation: ['共生体の放出が定着', '取り込んだ共生体を手放した系統が定着した'], reorg: ['コドンの再編成が定着', 'コドンの圧縮・再展開による変化が定着した'], exchange: ['遺伝子の受け渡しが定着', '別の個体から受け取った遺伝子が定着した'] };
+      for (const e of live.evo().events) if (e.status === 'established' && MECH[e.kind] && (e.kind !== 'exchange' || e.sub === 'inter' || e.sub.startsWith('heritage'))) discover(`mech:${e.kind}${e.sub && e.sub.startsWith('heritage') ? ':heritage' : ''}:${e.lin}`, 'mechanism', MECH[e.kind][0] + (e.sub && e.sub.startsWith('heritage') ? '（遺産）' : ''), MECH[e.kind][1], e.lin, 0.7, 2);
+      // feats: long lives, living on with almost no one left, extreme places
+      const rec = game.records(); for (const r of rec) { if (!ever[r.lin]) continue; CDX.FEAT_TIERS.longevity.forEach((th, k) => { if (r.recordAge >= th) feat(`longevity:${r.lin}:${th}`, `長寿の記録 ${th}ステップ`, `ひとつの個体が${th}ステップ（約${(th * 30 / 365.25).toFixed(0)}年）途切れず生きた`, r.lin, k); }); }
+      for (let i = 0; i < n; i++) { const a = st.lineageAlive[i]; if (a >= 1 && a <= 3 && peakLin[i] >= 5) soloSteps[i] += 100; else if (a > 3) soloSteps[i] = 0; CDX.FEAT_TIERS.solo.forEach((th, k) => { if (soloSteps[i] >= th) feat(`solo:${i}:${th}`, `わずかな個体で生き延びた ${th}ステップ`, `3個体以下になりながら、${th}ステップ続いた`, i, k + 1); }); }
+      const ext = new Array(n).fill(false); for (const q of inds) { const p = H.realms[q.patch]; if (p && (p.T[q.zb] >= 330 || p.P[q.zb] >= 1e8)) ext[q.lin] = true; }
+      for (let i = 0; i < n; i++) { if (ext[i]) extSteps[i] += 100; CDX.FEAT_TIERS.vent.forEach((th, k) => { if (extSteps[i] >= th) feat(`vent:${i}:${th}`, `極限環境で暮らした ${th}ステップ`, `高温・超高圧の場所に住み続けた`, i, k + 1); }); }
+      omegaTick(st);
+    }
+    function omegaTick(st) {
+      if (game.omega || !game.rank || !game.rank.lineages) return; const cdn = live.codon(), civAlive = !!(wm && wm.civ.civ);
+      for (const l of game.rank.lineages) { const i = l.lin; if (!ever[i] || st.lineageAlive[i] < 5 || !l.judged) { omegaHeld[i] = 0; continue; } const c = cdn && cdn[i], cd = c ? { packed: c.packed, redundancy: c.redundancy, burden: Math.max(0, Math.min(2, c.Lp / c.L0 - 1)) } : null;
+        const o = RK.omega(l, l.metrics, { civAlive, held: omegaHeld[i], codon: cd }); if (o.allButHeld) omegaHeld[i] += DETECT_EVERY; else omegaHeld[i] = 0;
+        if (o.judged && o.criteria.every((x) => x.met || x.id === 'held') && omegaHeld[i] >= RK.OMEGA_NEED.held) { game.omega = { lin: i, name: creatures[i].name, t: live.t, y: yearsNow(), bp: WORLD.bp(wm) }; addEvent('omega', `Ω到達：${creatures[i].name}が、自力で極めて長く存続する生命になった`); achieve('omega', 'Ωコドン到達', `${creatures[i].name}`, i, true); if (!game.checkpoint) game.checkpoint = { t: live.t, kind: 'omega', lin: i }; break; }
+      }
+    }
+    game.omegaStatus = (lin = controlled) => { const l = game.rank.lineages.find((x) => x.lin === lin); if (!l) return null; const c = live.codon(), cc = c && c[lin], cd = cc ? { packed: cc.packed, redundancy: cc.redundancy, burden: Math.max(0, Math.min(2, cc.Lp / cc.L0 - 1)) } : null; return { ...RK.omega(l, l.metrics, { civAlive: !!(wm && wm.civ.civ), held: omegaHeld[lin], codon: cd }), reached: game.omega }; };
+    function crisisHook(e) {
+      if (e.kind === 'cat-onset') { const st = live.stats(); aliveAtOnset.set(e.cat, st.lineageAlive.map((a, i) => (a >= 5 ? i : -1)).filter((i) => i >= 0)); }
+      else if (e.kind === 'cat-aftermath') { const c = wm.cat.find((x) => x.id === e.cat), was = aliveAtOnset.get(e.cat) || [], st = live.stats(); for (const i of was) if (st.lineageAlive[i] >= 3) feat(`cat:${e.cat}:${i}`, `${c.label}を生き延びた`, `${c.historical ? '史実の' : ''}大災厄を、系統として生き延びた`, i, c.scale >= 2 ? 3 : c.scale >= 1.4 ? 2 : 1); }
+    }
+    game.codex = () => [...codexMap.values()]; game.feats = () => [...featMap.values()];
+    game.heritageReport = () => { const hs = live.heritage(); return { items: hs.map((h) => ({ ...h, fromName: creatures[h.from] ? creatures[h.from].name : '?', takenByNames: h.takenBy.map((l) => creatures[l].name), effText: h.eff.map(([t, w]) => `${TRAIT_ALL_JA[t] || t}${w >= 0 ? '＋' : '－'}`).join(' ') })), note: '遺産は、絶えた系統の遺伝子の断片です。拾われるかどうかは運で、拾われても定着するとは限りません。どの断片が誰に渡るかをプレイヤーが選ぶことはできません。方針（捕食・共生・回避）は、見つかる機会に影響します。' }; };
+    // what to carry into another world (special mode only): relics still around plus the strongest genes of living lineages, as plain data
+    game.exportHeritage = () => { const out = [], hs = live.heritage().filter((h) => h.status !== 'decayed').slice(-12); for (const h of hs) out.push({ fromId: creatures[h.from] ? creatures[h.from].id : null, kind: h.kind, eff: h.eff, prom: 0, sens: null, len: 2 }); const st = live.stats(); for (let i = 0; i < creatures.length && out.length < 24; i++) if (st.lineageAlive[i] >= 5) { const gg = live.topGenes(i, 1); if (gg) for (const it of gg) out.push({ fromId: creatures[i].id, kind: it.kind, eff: it.eff, prom: it.prom, sens: it.sens, len: it.len }); } return out.slice(0, 24); };
+    game.records4 = () => ({ mode: cfg.heritage ? 'special' : 'normal', codex: game.codex(), feats: game.feats(), omega: game.omega, years: yearsNow(), bp: WORLD.bp(wm), seed: cfg.seed, bestRank: game.rank.best ? game.rank.best.rank : null });
+    if (S4 && cfg.heritage && cfg.heritage.length) { const idx = (id) => Math.max(0, creatures.findIndex((c) => c.id === id)); live.addHeritage(cfg.heritage.map((it) => ({ ...it, from: idx(it.fromId), fromWorld: true }))); addEvent('codex', `🧬 前の世界の遺産${cfg.heritage.length}個が、この世界の水に漂っている（特殊モード）`); }
+    // ======== Stage 4.0: the fan-shaped phylogeny. Built only from the engine's own records of mutation, reorganisation, fusion, separation, exchange and heritage; nothing is drawn that
+    // was not recorded. Each node is an event that founded a clade (its descendants carry its tag); `par` is the clade it came out of. Time runs from the centre outwards. ========
+    game.phylo = (limit = 160) => {
+      if (!S4) return null; const ev = live.evo(), st = live.stats(), keep = [], lost = creatures.map(() => 0);
+      const rank = { established: 0, occurred: 1, lost: 2, faded: 2 };
+      const tracked = ev.events.filter((e) => ['mutation', 'reorg', 'separation', 'fusion', 'exchange'].includes(e.kind) && (e.kind !== 'mutation' || e.sub === 'newcap' || Math.abs(e.delta) >= 0.15) && (e.kind !== 'exchange' || e.sub !== 'intra'));
+      const sorted = tracked.slice().sort((a, b) => rank[a.status] - rank[b.status] || b.t - a.t);
+      for (const e of sorted) { if (keep.length < limit && rank[e.status] < 2) keep.push(e); else lost[e.lin]++; }
+      const ids = new Set(keep.map((e) => e.id)), nodes = keep.map((e) => ({ id: e.id, parent: e.par && ids.has(e.par) ? e.par : null, lin: e.lin, y: evoY.has(e.id) ? evoY.get(e.id) : 0, t: e.t, kind: e.kind, sub: e.sub, status: e.status, carriers: e.carriers, from: e.from === undefined ? null : e.from, label: evoText(e.kind === 'reorg' ? { ...e, kind: 'mutation', sub: 'alter' } : e, e.status) }));
+      const links = []; for (const nd of nodes) { if (nd.kind === 'fusion' && nd.from !== null) links.push({ type: 'fusion', fromLin: nd.from, to: nd.id, y: nd.y }); else if (nd.kind === 'exchange' && nd.from !== null) links.push({ type: nd.sub.startsWith('heritage') ? 'heritage' : 'exchange', fromLin: nd.from, to: nd.id, y: nd.y }); }
+      const roots = creatures.map((c, i) => ({ lin: i, name: c.name, color: c.color, alive: st.lineageAlive[i], ends: lineageEnds[i].slice(), lostClades: lost[i] }));
+      return { nodes, links, roots, focus: controlled, years: yearsNow(), scale: wm ? wm.presentYears + 1e9 : 1, tracked: tracked.length, shown: nodes.length, note: '記録されたイベントだけで描いています。古くて消えた枝は数だけを示します。' };
     };
     game.freeRoutes = () => { if (!S31) return null; const mv = live.stats().moves; if (!mv) return null; const ref = E.REALM_ADJ; let on = 0, off = 0; mv.forEach((row, a) => row.forEach((n, b) => { if (a === b) return; if (ref[a].includes(b)) on += n; else off += n; })); return { reference: on, outside: off }; };
     game.save = () => ({ v: S31 ? 8 : S3 ? 7 : TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
