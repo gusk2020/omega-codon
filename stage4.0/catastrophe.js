@@ -106,7 +106,7 @@
   function forecast(c, stageIndex, now) {
     const rem = Math.max(0, c.onset - now), width = c.lead * LEAD[stageIndex] * (stageIndex === 0 ? 0.6 : stageIndex === 1 ? 0.35 : 0.15);
     const centre = c.onset + c.fc.timeErr[stageIndex] * width * 0.6, scaleHat = Math.max(0.5, c.scale * Math.exp(c.fc.scaleErr[stageIndex]));
-    const kinds = Object.keys(TYPES).filter((k) => k !== 'compound' && k !== 'glaciation'); // glaciation (Stage 4.0) is kept out so that earlier worlds forecast exactly as before let predicted = c.parts, wrong = false;
+    const kinds = Object.keys(TYPES).filter((k) => k !== 'compound' && k !== 'glaciation'); let predicted = c.parts, wrong = false;
     if (c.fc.wrongType[stageIndex]) { wrong = true; const alt = kinds.filter((k) => !c.parts.includes(k)); predicted = [alt[Math.floor(c.fc.wrongPick * alt.length)]]; }
     const probe = { ...c, parts: predicted, scale: scaleHat, severity: 1 - Math.exp(-0.9 * scaleHat) };
     const e1 = effectsAt([{ ...probe, onset: 0 }], 1e3), e2 = effectsAt([{ ...probe, onset: 0 }], 2e5);

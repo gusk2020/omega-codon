@@ -182,7 +182,7 @@ body.s31 #rankstrip .rd.met{border-color:#46c28a;background:#173528}body.s31 #ra
 /* ---------- Stage 4.0: the life dish, the achievement card, the collection screens ---------- */
 body.s4 #world{aspect-ratio:1/1;background:#080d13;border-radius:50%;max-height:min(100vw - 32px,420px);width:min(100%,420px);margin:0 auto}
 body.s4 #mapcap{text-align:center;height:14px}
-body.s4 #ticker{height:auto;min-height:58px;padding:6px 10px;display:block;border:1px solid #243548}
+body.s4 #ticker{height:64px;padding:6px 10px;display:flex;align-items:center;overflow:hidden;border:1px solid #243548}
 body.s4 #ticker.ach-special{border-color:#d8dde3}
 body.s4 #ticker.flash{animation:achflash 3.2s ease-out}
 @keyframes achflash{0%{background:#e8edf2;color:#0b1118}30%{background:#c9d1d9;color:#0b1118}100%{background:var(--panel)}}
@@ -196,3 +196,4 @@ body.s4 #tabs{margin:6px 0 8px}
 #codon-cv{width:100%;display:block;background:#080d13;border-radius:10px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}.g4>div{background:var(--panel);border-radius:10px;padding:6px 8px}.g4 small{display:block;color:var(--dim);font-size:10.5px}.g4 b{font-size:15px}
 .omega-h{font-size:56px;text-align:center;margin:0;color:#f0f4f8}
+body.s31 .controls{height:50px;min-height:50px;box-sizing:border-box}body.s31 .controls #pp{height:44px;line-height:1;padding:0}body.s31 .controls #pp{overflow:hidden}

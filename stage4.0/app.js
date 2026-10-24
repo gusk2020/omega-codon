@@ -1146,7 +1146,8 @@
   // ---- 詳細: the older screens, behind one tab ----
   const DETAIL_SUBS = [['stat', '状況'], ['ind', '個体'], ['trait', '形質'], ['graph', '推移'], ['env', '生息域'], ['world', '世界'], ['rank', 'ランク'], ['about', '説明']];
   const DETAIL_SET = new Set(DETAIL_SUBS.map((x) => x[0])); let detailSub = 'stat';
-  function drawDetailNav() { const el = $('detailnav'); el.hidden = !(S4() && DETAIL_SET.has(tab)); if (el.hidden) return; el.innerHTML = DETAIL_SUBS.map(([k, n]) => `<button class="chip${tab === k ? ' on' : ''}" data-k="${k}">${n}</button>`).join(''); el.querySelectorAll('.chip').forEach((b) => { b.onclick = () => { detailSub = b.dataset.k; setTab(detailSub); }; }); }
+  let navKey = '';
+  function drawDetailNav() { const el = $('detailnav'); el.hidden = !(S4() && DETAIL_SET.has(tab)); if (el.hidden) { navKey = ''; return; } if (navKey === tab) return; navKey = tab; /* rebuilt only when the tab changes: a button that is replaced between touch-down and touch-up cannot be tapped */ el.innerHTML = DETAIL_SUBS.map(([k, n]) => `<button class="chip${tab === k ? ' on' : ''}" data-k="${k}">${n}</button>`).join(''); el.querySelectorAll('.chip').forEach((b) => { b.onclick = () => { detailSub = b.dataset.k; setTab(detailSub); }; }); }
   function setTab(t) { tab = t; const nav = document.querySelector('#tabs'); nav.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.tab === t || (x.dataset.tab === 'detail' && DETAIL_SET.has(t) && S4()))); for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) { const e = $('tab-' + id); if (e) e.hidden = id !== t; } drawDetailNav(); draw(true); }
   function drawAbout() {
     $('tab-about').innerHTML = `<div class="note"><b>時間のしくみ</b>：1ステップ＝30日とみなします。世界の時計（年）は、計算したステップと、跳躍（世界のモデルだけを進める）で進みます。跳躍のあと、実際の世代の代わりに最大240ステップだけ、突然変異を2倍にして計算します（近似）。省略した世代は進化として数えません。</div>

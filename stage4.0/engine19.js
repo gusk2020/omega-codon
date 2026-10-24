@@ -482,10 +482,11 @@
     const frRand = V31 ? rng((o.seed * 104729) ^ 0x7F4A7C) : null;
     if (EV) {
       EV.t = 0; const CAP = 400, EVN = 5;
-      const CAPS = { mutation: 200, exchange: 100, fusion: 60, separation: 40, reorg: 60 };
+      const CAPS = { mutation: 200, exchange: 100, fusion: 60, separation: 40, 'reorg:compress': 60, 'reorg:unpack': 40 };
+      const capKey = (ev) => (ev.kind === 'reorg' ? 'reorg:' + (ev.sub === 'unpack' ? 'unpack' : 'compress') : ev.kind);
       const addEvent = (ev) => { // each kind has its own room, so a flood of one cannot push out the rare ones; a lost event makes room for a new one of its kind; counts are exact regardless
-        const same = EV.list.filter((e) => e.kind === ev.kind);
-        if (same.length >= CAPS[ev.kind]) { const old = same.find((e) => e.status === 'lost' || e.status === 'faded'); if (!old) return null; EV.list.splice(EV.list.indexOf(old), 1); }
+        const key = capKey(ev), same = EV.list.filter((e) => capKey(e) === key);
+        if (same.length >= CAPS[key]) { const old = same.find((e) => e.status === 'lost' || e.status === 'faded'); if (!old) return null; EV.list.splice(EV.list.indexOf(old), 1); }
         ev.id = EV.nextId++; ev.t = EV.t; ev.status = 'occurred'; ev.carriers = 0; ev.peak = 0; EV.list.push(ev); return ev;
       };
       const tagged = (parent, child, ev) => { if (ev) { ev.par = parent.tags && parent.tags.length ? parent.tags[parent.tags.length - 1] : null; child.tags = (parent.tags || []).concat(ev.id).slice(-8); } else if (parent.tags) child.tags = parent.tags; return child; };

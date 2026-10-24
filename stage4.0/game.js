@@ -836,7 +836,7 @@
       return { nodes, links, roots, focus: controlled, years: yearsNow(), scale: wm ? wm.presentYears + 1e9 : 1, tracked: tracked.length, shown: nodes.length, note: '記録されたイベントだけで描いています。古くて消えた枝は数だけを示します。' };
     };
     game.freeRoutes = () => { if (!S31) return null; const mv = live.stats().moves; if (!mv) return null; const ref = E.REALM_ADJ; let on = 0, off = 0; mv.forEach((row, a) => row.forEach((n, b) => { if (a === b) return; if (ref[a].includes(b)) on += n; else off += n; })); return { reference: on, outside: off }; };
-    game.save = () => ({ v: S31 ? 8 : S3 ? 7 : TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
+    game.save = () => ({ v: S4 ? 9 : S31 ? 8 : S3 ? 7 : TB ? 6 : 5, cfg: game.cfg, t: live.t, log: game.log.map((e) => ({ ...e })), autoContinuous: game.autoContinuous });
     // Only values the engine actually computes: living counts, their change over about the last 100 steps, extinction time,
     // and the catches recorded on individuals that are still alive. The prey is a shared background resource, not a lineage,
     // so there is no predator-prey relation between lineages to report; the report says so instead of inventing one.
