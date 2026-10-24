@@ -621,7 +621,7 @@
     //     A stance does nothing by itself: the engine checks whether the body can carry it out (see capability below); without the means it is wasted effort.
     const TARGETS = {
       civ: { name: '知性文明', list: [['none', '方針なし', '・'], ['attack', '敵対', '✕'], ['coexist', '共存', '＝'], ['flee', '回避', '↘'], ['defend', '防御', '◇']] },
-      plant: { name: '植物・固着生物', list: [['none', '方針なし', '・'], ['use', '捕食・利用', '🍃'], ['symbiosis', '共生', '🤝'], ['avoid', '回避', '↘'], ['compete', '競争', '⚔']] },
+      plant: { name: '植物・固着生物', list: [['none', '方針なし', '・'], ['use', '捕食・利用', '▽'], ['symbiosis', '共生', '＝'], ['avoid', '回避', '↘'], ['compete', '競争', '✕']] },
       animal: { name: '他の動物', list: [['none', '方針なし', '・'], ['hunt', '捕食・敵対', '✕'], ['coexist', '共存', '＝'], ['avoid', '回避', '↘'], ['defend', '防御', '◇']] },
     };
     const tg = { plant: creatures.map(() => 'none'), animal: creatures.map(() => 'none') };

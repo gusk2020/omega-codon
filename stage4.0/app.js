@@ -567,7 +567,8 @@
   const STANCE_ICON = { ignore: '😐', use: '🧺', coexist: '🤝', hostile: '⚔' }, STANCE_NAME = { ignore: '気に留めていない', use: '利用しようとしている', coexist: '共存', hostile: '敵対' };
   const EVENT_ICON = { 'civ-emerge': '🏛', 'civ-collapse': '💥', 'civ-end': '☠', impact: '☄', volcanic: '🌋', 'stance-hostile': '⚔', 'stance-use': '🧺', 'stance-coexist': '🤝', 'stance-ignore': '😐' };
   const KIND_ICON = { evo: '🧬', civ: '🏛', world: '🌍', lineage: '🧬', rank: '🏅', crisis: '⚠', trait: '🧪', immigration: '🔁', player: '🕹', branch: '❓', scenario: '☄', background: '🌱', local: '📍', dominance: '👑', disaster: '🔥', start: '▶' };
-  const evIcon = (e) => EVENT_ICON[e.sub] || KIND_ICON[e.kind] || '・';
+  const S4_ICON = { codex: '◇', omega: 'Ω', world: '○', civ: '□', evo: '◇', lineage: '△', rank: '▲', immigration: '→' };
+  const evIcon = (e) => (game && game.cfg.stage === 4 ? S4_ICON[e.kind] || '・' : EVENT_ICON[e.sub] || KIND_ICON[e.kind] || '・');
   const MAJOR_KINDS = new Set(['evo', 'civ', 'world', 'lineage', 'rank', 'crisis', 'immigration', 'player', 'scenario', 'background', 'dominance', 'start']);
   const detailsOpen = {};
   const gauge = (v, cls) => `<div class="gauge ${cls || ''}"><i style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%"></i></div>`;
@@ -853,7 +854,7 @@
     const ci = catNow(); if (!ci) return ''; let out = '';
     for (const f of ci.forecasts) out += S31() ? `<span class="hchip warnchip" data-cat="1">⚠ 大災厄 あと${fmtY(f.remainingYears)}</span>` : `<span class="hchip warnchip" data-cat="1">⚠ 大災厄の予告 ${fmtY(f.remainingYears)}後 規模「${f.scaleClass}」</span>`;
     const act = ci.status.find((s) => s.state === 'active' || s.state === 'aftermath'); if (act) out += `<span class="hchip warnchip" data-cat="1">${act.state === 'active' ? '🔥 大災厄の最中' : '🌱 災厄の回復途中'}（${act.label}）</span>`;
-    const o = game.offworld(); if (o && o.records.length) out += `<span class="hchip" data-off="1">🚀 ${o.records.length}</span>`;
+    const o = game.offworld(); if (o && o.records.length) out += `<span class="hchip" data-off="1">${S4() ? '外' : '🚀'} ${o.records.length}</span>`;
     return out;
   }
   // ---------- 世界 tab additions: crises, life beyond the Earth, the time ledger ----------
@@ -871,6 +872,7 @@
   let domC = { k: -1, g: null, v: null };
   const domNow = () => { if (!S31()) return null; const k = Math.floor(game.t / 25); if (domC.k !== k || domC.g !== game) domC = { k, g: game, v: game.dominance() }; return domC.v; };
   const domR = (i, small) => { const d = domNow(), v = d && d[i] && d[i].value !== null ? d[i].value : 0; return (small ? 3 : 4.5) + v * (small ? 9 : 14); };
+  const R_GLYPH = { continuity: 'T', aging: 'A', repair: 'R', efficiency: 'E', range: 'W', dormancy: 'D', independence: 'I', competition: 'C' }, rIcon = (i) => (S4() ? R_GLYPH[i.id] || '・' : i.icon); // Stage 4.0: dry letters instead of pictures
   const STAT_JA = { met: '達成', part: '一部達成', near: '惜しい', short: '不足', na: '未計算' }, STAT_MARK = { met: '✔', part: '△', near: '△', short: '✕', na: '–' };
   const SHORT_NAME = (n) => n.replace(/型$/, '');
   function openCard(html, onClose) {
@@ -882,8 +884,8 @@
     $('hud-era').textContent = wi.bpText; $('hud-sub').textContent = `開始から ${F.years(wi.years)}`;
     $('hud-rank').innerHTML = `<span class="rk">${cur ? cur.rank : '？'}</span><small>最高 <b>${best ? best.rank : 'なし'}</b></small>`;
     const th = game.threat(), lv = th ? ['安全', '注意', '危険', '非常に危険'][th.level] : null, col = th ? ['#46c28a', '#f2d13d', '#f2a03d', '#e5586e'][th.level] : null;
-    const thr = th ? `<span class="hchip" style="border-color:${col};color:${col}">${['🟢', '🟡', '🟠', '🔴'][th.level]} ${lv}</span>` : '';
-    const civ = wi.civ ? `<span class="hchip">🏛 ${wi.civ.stage}</span>` : '';
+    const thr = th ? `<span class="hchip" style="border-color:${col};color:${col}">${S4() ? '●' : ['🟢', '🟡', '🟠', '🔴'][th.level]} ${lv}</span>` : '';
+    const civ = wi.civ ? `<span class="hchip">${S4() ? '文明' : '🏛'} ${wi.civ.stage}</span>` : '';
     $('hud2').innerHTML = thr + civ + catBannerChips();
     document.querySelectorAll('#hud2 [data-cat]').forEach((e) => { e.onclick = () => openCatDetail(); }); document.querySelectorAll('#hud2 [data-off]').forEach((e) => { e.onclick = () => openOffworld(); });
   }
@@ -891,7 +893,7 @@
     const el = $('rankstrip'); if (!el) return; const c = game.rankChecklist();
     if (!c || !c.judged) { el.innerHTML = `<span class="rs-none">次のランク：判定中</span>`; el.onclick = null; return; }
     if (!c.to) { el.innerHTML = '<span class="rs-none">判定範囲の最高（Ωは未判定）</span>'; el.onclick = null; return; }
-    el.innerHTML = `<span class="rs-to">次 <b>${c.to}</b></span>` + c.items.map((i) => `<span class="rd ${i.status}" title="${i.label}"><i>${i.icon}</i><em>${STAT_MARK[i.status]}</em></span>`).join('') + '<span class="rs-more">▸</span>';
+    el.innerHTML = `<span class="rs-to">次 <b>${c.to}</b></span>` + c.items.map((i) => `<span class="rd ${i.status}" title="${i.label}"><i>${rIcon(i)}</i><em>${STAT_MARK[i.status]}</em></span>`).join('') + '<span class="rs-more">▸</span>';
     el.onclick = () => openRankProgress31();
   }
   function openRankProgress31() {
@@ -903,7 +905,7 @@
         if (i.id === 'continuity') line = `いま ${F.num(i.have)} ／ 必要 ${F.num(i.need)}ステップ`;
         else if (i.value === null) line = i.why || '判定できません';
         else line = `いま ${i.id === 'range' ? i.value + '領域' : i.id === 'competition' ? F.num(i.value) + 'ステップ' : i.id === 'independence' ? i.value + '回' : F.small(i.value, i.value < 10 ? 3 : 0)}${i.target !== null && i.target !== undefined ? ` ／ 目標 ${i.id === 'competition' ? F.num(i.target) : F.small(i.target, 3)}` : ''}${i.tier !== null && i.tier !== undefined ? `（段階${i.tier}）` : ''}`;
-        return `<div class="ck ${i.status}"><span class="ck-i">${i.icon}</span><div><b>${i.label}</b><small>${line}</small></div><em>${STAT_JA[i.status]}</em></div>`;
+        return `<div class="ck ${i.status}"><span class="ck-i">${rIcon(i)}</span><div><b>${i.label}</b><small>${line}</small></div><em>${STAT_JA[i.status]}</em></div>`;
       }).join('') + `<div class="note">${c.note}</div></div><button class="btn small" id="rk-more">必要量と、寄与し得る能力・代償</button>`;
     }
     h += '<div class="note">ランクは能力の足し算ではありません。知能・人口・文明の規模だけでは上がらず、環境支配力やこの表示の見やすさも判定には使いません。</div>';
@@ -1044,7 +1046,7 @@
   }
   function updateMapCap() { const el = $('mapcap'); if (el) el.textContent = S4() ? '扇＝場所／扇の中は時計回りが高温／中心＝高圧' : '円の大きさ＝環境支配力（個体数ではない）／点線＝参考の道筋'; }
   // ---- the achievement card ----
-  const ACH_ICON = { codex: '📖', feat: '🏅', heritage: '🧬', omega: 'Ω' };
+  const ACH_ICON = { codex: '◇', feat: '△', heritage: '⌬', omega: 'Ω' };
   let achSeen = 0, flashUntil = 0;
   function drawAch4() {
     const el = $('ticker'), a = game.achievements[0];
