@@ -477,7 +477,7 @@
     game.isAdaptive = TB;
     game.worldInfo = () => {
       if (!TB) return null; const c = wm.civ.civ, r = wm.civ.residue, a = WORLD.ambient(wm), st = live.stats(), simYears = st.t * YPS;
-      return { years: wm.years, simulatedYears: simYears, leapYears: tb.leapYears, bp: WORLD.bp(wm), bpText: WORLD.formatBP(wm), leaps: tb.leaps, blocked: tb.blocked, blocker: tb.lastBlocker,
+      return { presentYears: wm.presentYears || null, years: wm.years, simulatedYears: simYears, leapYears: tb.leapYears, bp: WORLD.bp(wm), bpText: WORLD.formatBP(wm), leaps: tb.leaps, blocked: tb.blocked, blocker: tb.lastBlocker,
         generations: clock.gen, skippedGenerations: tb.skipGens, daysPerStep: WORLD.DAYS_PER_STEP,
         climate: { warm: a.warm, solar: a.warmSolar, civil: a.warmCiv, luminosity: WORLD.luminosity(-WORLD.bp(wm)) },
         civ: c ? { id: c.id, N: c.N, T: c.T, stage: CIVM.stageName(c.T), S: c.S, phase: c.phase, war: c.war, collapses: c.collapses, born: c.born, ageYears: wm.years - c.born, reach: CIVM.reach(c.T) } : null,
@@ -773,6 +773,7 @@
       for (let i = 0; i < n; i++) { if (prevAlive[i] >= 3 && st.lineageAlive[i] === 0 && lastGenes[i]) { lineageEnds[i].push({ y: yearsNow(), t: live.t }); live.addHeritage(lastGenes[i].map((it) => ({ ...it, from: i }))); addEvent('codex', `🧬 ${creatures[i].name}が絶えた。遺伝子の断片が遺産として残った（拾われるか、消えるかは運しだい）`); achieve('heritage', '進化遺産が残った', `${creatures[i].name}の遺伝子${lastGenes[i].length}個`, i, false); lastGenes[i] = null; } prevAlive[i] = st.lineageAlive[i]; }
       for (const h of live.heritage()) { const was = heritageSeen.get(h.id); if (was !== h.status) { heritageSeen.set(h.id, h.status); if (h.status === 'taken') { const tl = h.takenBy[0]; if (tl !== undefined) { addEvent('codex', `🧬 ${creatures[tl].name}が${creatures[h.from].name}の遺産を受け継いだ`); achieve('heritage', '進化遺産の継承', `${creatures[h.from].name}の遺伝子が${creatures[tl].name}に受け継がれた`, tl, true, h.id); } } } }
       if (live.t % 100 !== 0) { if (live.t % 25 === 0) omegaTick(st); return; }
+      if (live.t % 400 === 0) { const cd0 = live.codon(); cd0.forEach((c, i) => { if (c && c.n >= 3) { codonSeries[i].push({ t: live.t, Lp: c.Lp, Le: c.Le, info: c.info, density: c.density }); if (codonSeries[i].length > 120) codonSeries[i] = codonSeries[i].filter((_, j) => j % 2 === 0); } }); }
       const inds = live.individuals(), H = game.habitatInfo(controlled), tot = inds.length || 1, sig = new Map();
       for (const q of inds) { const nm = normOf(q.traits), s = CDX.formSignature(nm), k = s.key + ':' + q.lin, e = sig.get(k); if (e) e.n++; else sig.set(k, { s, lin: q.lin, n: 1 }); }
       const living = new Map(); for (const q of inds) { const s = CDX.formSignature(normOf(q.traits)); living.set(s.key, (living.get(s.key) || 0) + 1); }
@@ -810,6 +811,11 @@
       if (e.kind === 'cat-onset') { const st = live.stats(); aliveAtOnset.set(e.cat, st.lineageAlive.map((a, i) => (a >= 5 ? i : -1)).filter((i) => i >= 0)); }
       else if (e.kind === 'cat-aftermath') { const c = wm.cat.find((x) => x.id === e.cat), was = aliveAtOnset.get(e.cat) || [], st = live.stats(); for (const i of was) if (st.lineageAlive[i] >= 3) feat(`cat:${e.cat}:${i}`, `${c.label}を生き延びた`, `${c.historical ? '史実の' : ''}大災厄を、系統として生き延びた`, i, c.scale >= 2 ? 3 : c.scale >= 1.4 ? 2 : 1); }
     }
+    const codonSeries = creatures.map(() => []);
+    game.codonInfo = (lin) => {
+      if (!S4) return null; const sg = live.sampleGenome(lin); if (!sg) return null; const cdn = live.codon(), s = sg.stats, burden = Math.max(0, Math.min(2, s.Lp / s.L0 - 1));
+      return { lin, name: creatures[lin].name, genes: sg.genes, stats: s, means: cdn ? cdn[lin] : null, costs: { replication: 1 + 0.25 * burden, ageing: 1 + 0.15 * burden, repair: 1 - 0.5 * s.packed, upkeep: 0.0008 * s.Lp }, series: codonSeries[lin].slice() };
+    };
     game.codex = () => [...codexMap.values()]; game.feats = () => [...featMap.values()];
     game.heritageReport = () => { const hs = live.heritage(); return { items: hs.map((h) => ({ ...h, fromName: creatures[h.from] ? creatures[h.from].name : '?', takenByNames: h.takenBy.map((l) => creatures[l].name), effText: h.eff.map(([t, w]) => `${TRAIT_ALL_JA[t] || t}${w >= 0 ? '＋' : '－'}`).join(' ') })), note: '遺産は、絶えた系統の遺伝子の断片です。拾われるかどうかは運で、拾われても定着するとは限りません。どの断片が誰に渡るかをプレイヤーが選ぶことはできません。方針（捕食・共生・回避）は、見つかる機会に影響します。' }; };
     // what to carry into another world (special mode only): relics still around plus the strongest genes of living lineages, as plain data

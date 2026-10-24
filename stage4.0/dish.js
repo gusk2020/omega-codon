@@ -27,7 +27,7 @@
   function paint(points, doms, nLin) {
     const per = Array.from({ length: nLin }, () => null), idx = (ai, ri) => ri * A + ai;
     for (const p of points) {
-      const dm = clamp(doms[p.lin] === null || doms[p.lin] === undefined ? 0 : doms[p.lin], 0, 1), rho = 1 + 3 * dm, base = (1 - Math.exp(-p.n / 1.5)) * (0.4 + dm);
+      const dm = clamp(doms[p.lin] === null || doms[p.lin] === undefined ? 0 : doms[p.lin], 0, 1), rho = 2 + 6 * dm, base = (1 - Math.exp(-p.n / 1.5)) * (0.45 + dm);
       const a0 = Math.round(p.a * A), r0 = Math.round(p.r * (R - 1)), span = Math.ceil(2 * rho), g = per[p.lin] || (per[p.lin] = new Float32Array(A * R));
       for (let dr = -span; dr <= span; dr++) { const ri = r0 + dr; if (ri < 0 || ri >= R) continue; for (let da = -span; da <= span; da++) { const ai = (((a0 + da) % A) + A) % A, d2 = (da * da + dr * dr) / (rho * rho); if (d2 > 4) continue; const k = idx(ai, ri); g[k] = Math.min(1, g[k] + base * Math.exp(-d2)); } }
     }
