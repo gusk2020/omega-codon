@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1621">
+<title>Omega Codon</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="start" class="screen">
+  <h1>Omega Codon</h1>
+  <p class="sub">原始の海の単細胞から、現代、その先の未来史まで。8つの系統の勢力争い、進化・融合・遺産の継承、大災厄を、放置して見守ります。</p>
+  <div id="legacy-setup" hidden>
+  <h2>1. 注目する生き物（1〜3種）</h2>
+  <div id="creatures"></div>
+  <h2>2. 競争相手の数</h2>
+  <div id="rivals" class="chips"></div>
+  <p id="rival-preview" class="note"></p>
+  <h2>3. 開始の時代</h2>
+  <div id="scenarios" class="chips"></div>
+  <p class="note">衝突直後の食料減少と寒冷化は外部条件として加わりますが、何が生き残るかは固定しません。</p>
+  <h2>4. 土地</h2>
+  <div id="envs" class="chips"></div>
+  <h2>5. 時間の方式</h2>
+  <div id="timemodes" class="chips"></div>
+  <p id="timemode-note" class="note"></p>
+  </div>
+  <h2>モード</h2>
+  <div id="modes" class="chips"></div>
+  <p id="mode-note" class="note"></p>
+
+  <h2>乱数の種</h2>
+  <div class="row"><input id="seed" type="number" inputmode="numeric" min="1" value="1"><button id="reseed" class="btn small">ランダム</button></div>
+  <button id="go" class="btn primary big">進化を始める</button>
+  <h2>セーブデータ</h2>
+  <div id="slots-start"></div>
+  <p class="note">個体の進化は個体ごとに計算します。選ばれなかった多数の生き物は背景として粗く扱い、世界全体の個体数は示しません。時間・文明・気候の数値の多くはゲーム上の仮定です（画面の「くわしい説明」に明記）。</p>
+</div>
+
+<div id="play" class="screen" hidden>
+  <div id="hud">
+    <div class="hud-era"><b id="hud-era">-</b><small id="hud-sub"></small></div>
+    <div id="hud-rank"></div>
+    <button id="menu" class="btn small" aria-label="メニュー">☰</button>
+  </div>
+  <div id="hud2"></div>
+  <div id="rankstrip" role="button"></div>
+  <div id="timeline" hidden></div>
+  <canvas id="world" width="360" height="260"></canvas>
+  <div id="mapcap" class="mapcap">円の大きさ＝環境支配力（個体数ではない）／点線＝参考の道筋</div>
+  <div id="linbar"></div>
+  <div id="stratbar"></div>
+  <div class="controls">
+    <button id="pp" class="btn primary">⏸</button>
+    <div id="speeds"></div>
+  </div>
+  <div class="row3"><button id="skip" class="btn small">⏭ 次の出来事まで</button><button id="auto" class="chip">自動：OFF</button><button id="save" class="btn small">保存</button></div>
+  <div id="speedinfo" class="note"></div><span id="skipnote" class="note"></span><span class="note" id="auto-note" hidden></span>
+  <div id="ticker"></div>
+  <div id="detailnav" class="chips" hidden></div>
+  <nav id="tabs"><button data-tab="world" class="on">世界</button><button data-tab="stat">状況</button><button data-tab="ind">個体</button><button data-tab="rank">ランク</button><button data-tab="trait">形質</button><button data-tab="graph">推移</button><button data-tab="env">環境</button><button data-tab="log">履歴</button></nav>
+  <section id="tab-codex"></section>
+  <section id="tab-phylo" hidden></section>
+  <section id="tab-codon" hidden></section>
+  <section id="tab-feats" hidden></section>
+  <section id="tab-about" hidden></section>
+  <section id="tab-world" hidden></section>
+  <section id="tab-stat" hidden></section>
+  <section id="tab-ind" hidden></section>
+  <section id="tab-rank" hidden></section>
+  <section id="tab-trait" hidden></section>
+  <section id="tab-graph" hidden><canvas id="chart" width="360" height="200"></canvas><div id="chart-note" class="note"></div></section>
+  <section id="tab-env" hidden>
+    <div class="chips" id="env-modes"></div>
+    <div class="chips" id="ov-modes"></div>
+    <div id="ov-detail"></div>
+    <canvas id="habitat" width="360" height="360"></canvas>
+    <div class="envtools" id="env-tools"></div>
+    <div id="env-note" class="note"></div>
+  </section>
+  <section id="tab-log" hidden></section>
+</div>
+
+<div id="modal" hidden><div class="card" id="modal-card"></div></div>
+<div id="toast" hidden></div>
+<script src="fmt.js"></script>
+<script src="engine19.js"></script>
+<script src="background.js"></script>
+<script src="earthhistory.js"></script>
+<script src="adaptation.js"></script>
+<script src="civilization.js"></script>
+<script src="catastrophe.js"></script>
+<script src="history4.js"></script>
+<script src="dish.js"></script>
+<script src="codex4.js"></script>
+<script src="world.js"></script>
+<script src="niche.js"></script>
+<script src="offworld.js"></script>
+<script src="timemodel.js"></script>
+<script src="habitat.js"></script>
+<script src="rank.js"></script>
+<script src="game.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
