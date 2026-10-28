@@ -53,6 +53,7 @@
   ];
   const IMPORTANT = new Set(['branch', 'disaster', 'crisis', 'lineage', 'scenario', 'immigration', 'player', 'rank', 'civ', 'world']);
   const STRATEGIES = { none: { code: 0, name: '方針なし', icon: '・' }, flee: { code: 1, name: '逃避', icon: '↘' }, coexist: { code: 2, name: '共存', icon: '＝' }, defend: { code: 3, name: '防御', icon: '◇' }, attack: { code: 4, name: '攻撃', icon: '✕' } };
+  const LEAP_MIN_GAP = 120, APPROX_MAX = 80, APPROX_MUT = 3; // Stage 5.1: leaps come more often and are cheaper (was 400 / 240 steps, mutation x2) so that the clock moves smoothly on a phone
   const LEAP_FROM = 6000; // steps: the first years after the impact are always simulated step by step
   // Pauses with a choice (continue / save / start over): the first at the old fixed end (100000 steps), then at regular intervals. There is no fixed end any more.
   const CHECKPOINT = { first: 100000, every: 50000 };
@@ -408,7 +409,7 @@
     function lifeMean(i, st) { const s = st.lineageStats[i]; return s.deaths ? s.lifeSum / s.deaths : 25; }
     function leapCheck() {
       if (!TB || live.t < LEAP_FROM || game.pending || game.checkpoint || isOver()) return;
-      const st = live.stats(), genSteps = clock.winGenTime || 25, Wreq = st.population === 0 ? DETECT_EVERY : Math.max(400, Math.min(4000, Math.round(8 * genSteps))); // with nobody in the arena there is nothing to simulate between leaps
+      const st = live.stats(), genSteps = clock.winGenTime || 25, Wreq = st.population === 0 ? DETECT_EVERY : Math.max(LEAP_MIN_GAP, Math.min(4000, Math.round(3 * genSteps))); // with nobody in the arena there is nothing to simulate between leaps
       if (live.t - tb.lastLeapT < Wreq) return;
       const blocker = leapBlocker(live.individuals(), (l) => lifeMean(l, st)); // an exceptionally long-lived individual is never skipped over: while one is alive, time runs step by step
       if (blocker) { tb.blocked++; tb.lastBlocker = { lin: blocker.lin, age: blocker.age, t: st.t }; return; }
@@ -436,8 +437,8 @@
     // everything is unchanged: nothing else is simulated until they are done, they stop at every logged action of a replay, and what followed the leap follows them.
     let approx = null;
     function startApprox(skippedSteps, post) {
-      const E_STEPS = Math.min(240, Math.round(skippedSteps / 20000)); if (E_STEPS < 1 || live.stats().population === 0) return false;
-      const base = live.options.mutationRate; live.setOption('mutationRate', Math.min(1, base * 2)); tb.approxLeaps = (tb.approxLeaps || 0) + 1; approx = { left: E_STEPS, base, post, tail: null }; return true;
+      const E_STEPS = Math.min(APPROX_MAX, Math.round(skippedSteps / 20000)); if (E_STEPS < 1 || live.stats().population === 0) return false;
+      const base = live.options.mutationRate; live.setOption('mutationRate', Math.min(1, base * APPROX_MUT)); tb.approxLeaps = (tb.approxLeaps || 0) + 1; approx = { left: E_STEPS, base, post, tail: null }; return true;
     }
     function stepApprox(limit) {
       const stop = nextStop(limit), n = Math.min(approx.left, Math.max(1, stop - live.t)); live.step(n); approx.left -= n; tb.approxSteps = (tb.approxSteps || 0) + n;

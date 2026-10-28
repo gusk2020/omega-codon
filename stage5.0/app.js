@@ -151,10 +151,10 @@
     if (playing && !game.pending && !game.checkpoint && !game.isOver) {
       const t0 = performance.now();
       if (skipping) {
-        while (performance.now() - t0 < 12 && !game.pending && !game.checkpoint && !game.isOver) { game.advance(25); if (game.eventsSince(skipping.seq0).some((e) => STOP_KINDS.has(e.kind)) || game.t - skipping.t0 >= MAX_SKIP) { stopSkip(false); break; } }
+        while (performance.now() - t0 < 12 && !game.pending && !game.checkpoint && !game.isOver) { game.advance(5); if (game.eventsSince(skipping.seq0).some((e) => STOP_KINDS.has(e.kind)) || game.t - skipping.t0 >= MAX_SKIP) { stopSkip(false); break; } }
         if (skipping) $('skipnote').textContent = `早送り中… ${(game.t - skipping.t0).toLocaleString('ja-JP')}ステップ`; else acc = 0;
       } else {
-        acc += dt * SPEEDS[speedIdx]; const budget = speedIdx >= 4 ? 11 : 8, chunk = speedIdx >= 4 ? 25 : 10;
+        acc += dt * SPEEDS[speedIdx]; const budget = speedIdx >= 4 ? 11 : 8, chunk = 5; // Stage 5.1: small chunks (a 25-step chunk can take ~40 ms on a phone, longer than the whole frame budget, which froze the clock and delayed touches)
         while (acc >= 1 && performance.now() - t0 < budget && !game.pending && !game.checkpoint && !game.isOver) { const n = Math.min(Math.floor(acc), chunk); game.advance(n); acc -= n; }
       }
       if (acc > SPEEDS[speedIdx] * 0.2) acc = SPEEDS[speedIdx] * 0.2; // drop the backlog instead of falling ever further behind

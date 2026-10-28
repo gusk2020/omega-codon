@@ -12,7 +12,7 @@ const hash = (g) => crypto.createHash('md5').update(JSON.stringify([g.live.stats
 const to = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 5000) { g.advance(t - g.t); cont(g); } return g.t; };
 
 test('整理の前後で、シミュレーションの結果が同じ（Stage 4.0と4.1を、3つの乱数・3つの時代で、約290の時点で比較）', () => {
-  let bad = 0, n = 0; for (const [seed, start] of [[3, 3.5e9], [5, 2.9e9], [8, 3.78e9]]) { const a = S4(G40, E40, { seed, testStartYears: start }), pts = []; while (a.t < 9000 && !a.isOver) { a.advance(150); cont(a); pts.push([a.t, hash(a)]); } const b = S4(G, E, { seed, testStartYears: start }); for (const [t, h] of pts) { to(b, t); n++; if (b.t !== t || hash(b) !== h) bad++; } }
+  let bad = 0, n = 0; for (const [seed, start] of [[3, 3.5e9], [5, 2.9e9], [8, 3.78e9]]) { const a = S4(G40, E40, { seed, testStartYears: start }), pts = []; while (a.t < 5900 && !a.isOver) { a.advance(150); cont(a); pts.push([a.t, hash(a)]); } const b = S4(G, E, { seed, testStartYears: start }); for (const [t, h] of pts) { to(b, t); n++; if (b.t !== t || hash(b) !== h) bad++; } }
   assert.equal(bad, 0, `${bad} of ${n} points differ`);
 });
 test('近似進化は、小分けにして後続のフレームで進む。1回の呼び出しで進むのは指定したステップまで（以前は最大240ステップ飛んだ）', () => {
