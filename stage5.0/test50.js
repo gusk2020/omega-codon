@@ -25,11 +25,11 @@ test('1A：+309 Myrを越えても世界の時間が進み続ける（速度切�
 });
 test('1A：イベント400件超でも時間が進み、セーブ復元後に時間・ステップ数が一致する', () => {
   const g = mk(3, { creatures: ['standard'], start: false }); let n = 0;
-  while (g.events.length <= 400 && !g.isOver && n++ < 8000) { g.advance(500); cont(g); }
-  assert.ok(g.events.length > 400, `only ${g.events.length} events`);
+  while (g.eventSeq <= 450 && !g.isOver && n++ < 3000) { g.advance(500); cont(g); }
+  assert.ok(g.eventSeq > 400, `only ${g.eventSeq} events`); // eventSeq counts every event ever raised (the log itself is trimmed to the last 400)
   const y = g.worldInfo().years; for (let i = 0; i < 20; i++) { g.advance(500); cont(g); }
   assert.ok(g.worldInfo().years > y, 'time still advances beyond 400 events');
-  const b = restore(g); assert.equal(b.t, g.t); assert.equal(b.worldInfo().years, g.worldInfo().years); assert.equal(b.events.length, g.events.length);
+  const b = restore(g); assert.equal(b.t, g.t); assert.equal(b.worldInfo().years, g.worldInfo().years); assert.equal(b.eventSeq, g.eventSeq);
 });
 test('1A：+309 Myr後のセーブも、復元後に時間・ステップ数が一致する', () => {
   const g = shared || mk(3); const b = restore(g);
