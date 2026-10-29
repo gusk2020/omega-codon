@@ -28,17 +28,20 @@
     { id: 'independence', name: '集団・技術に頼らない自力の生存', unit: '知性文明の敵対（捕獲・駆除・環境破壊）の下で、共存による支援に頼らずに存続した回数（ゲーム上の仮定。文明が現れない世界では未計算）', better: 'high', tiers: [1, 2, 4, 8] },
     { id: 'competition', name: '競争下での持続力', unit: '競争相手がいる状態で、系統が途切れず存続した期間（ステップ）', better: 'high', tiers: [4000, 15000, 50000, 150000] },
   ];
-  const CONTINUITY = { name: '連続生存期間', unit: '個体が途切れず生きた最長記録（ステップ）', tiers: [150, 250, 450, 1200, 4000] }; // Stage 5.0: measured individual records reach ~240 steps in 30000 steps, so 300 was out of reach; the top tier (and so the Omega condition) is unchanged
+  const CONTINUITY = { name: '連続生存期間', unit: '個体が途切れず生きた最長記録（ステップ）', tiers: [150, 200, 260, 400, 4000] }; // Stage 5.0: measured individual records reach ~240 steps in 30000 steps, so 300 was out of reach; the top tier (and so the Omega condition) is unchanged
   // rank rules over C (continuity tier 0-5) and K[l] = number of ability axes at tier >= l
+  // D: how far the lineage's key traits must have moved from where it began (mean change as a fraction of each trait's range, `drift`). Stage 5.1: promotion is tied to
+  // evolved change, not to the clock - a founder that already meets an ability bar at step 500 stays alpha until it has actually changed. Measured over 4 seeds, drift reaches
+  // 0.10-0.25 within 10000-100000 steps and then plateaus, so the bars sit inside that band.
   const RANKS = [
-    { id: 'α', name: 'α', C: 0, K: [] },
-    { id: 'β', name: 'β', C: 1, K: [[1, 1]] },
-    { id: 'γ', name: 'γ', C: 1, K: [[1, 2], [2, 1]] },
-    { id: 'δ', name: 'δ', C: 2, K: [[1, 3], [2, 1]] },
-    { id: 'ε', name: 'ε', C: 2, K: [[2, 3]] },
-    { id: 'ζ', name: 'ζ', C: 3, K: [[2, 4], [3, 1]] },
-    { id: 'η', name: 'η', C: 4, K: [[3, 3]] },
-    { id: 'θ', name: 'θ', C: 5, K: [[3, 4], [4, 2]] },
+    { id: 'α', name: 'α', C: 0, K: [], D: 0, O: 0 },
+    { id: 'β', name: 'β', C: 1, K: [[1, 1]], D: 0.03, O: 1500 },
+    { id: 'γ', name: 'γ', C: 1, K: [[1, 2], [2, 1]], D: 0.08, O: 6000 },
+    { id: 'δ', name: 'δ', C: 2, K: [[1, 3], [2, 1]], D: 0.12, O: 15000 },
+    { id: 'ε', name: 'ε', C: 2, K: [[2, 3]], D: 0.15, O: 30000 },
+    { id: 'ζ', name: 'ζ', C: 3, K: [[2, 4], [3, 1]], D: 0.18, O: 60000 },
+    { id: 'η', name: 'η', C: 4, K: [[3, 3]], D: 0.22, O: 100000 },
+    { id: 'θ', name: 'θ', C: 5, K: [[3, 4], [4, 2]], D: 0.28, O: 150000 },
   ];
   const OMEGA = { id: 'Ω', judgeable: false, text: 'Ωの正式な判定は、まだ実装できていません。必要な能力（宇宙・放射線への耐性、体の更新の限界、時間尺度の校正、集団や技術に依存しないことの検証など）の一部が未実装のため、Ω達成を表示することはありません。いま判定できる最高はθ（暫定）です。' };
   const tierOf = (value, ax) => { if (value === null || value === undefined || Number.isNaN(value)) return null; let t = 0; for (const th of ax.tiers) { if (ax.better === 'low' ? value <= th : value >= th) t++; else break; } return ax.capTier !== undefined ? Math.min(t, ax.capTier) : t; };
@@ -58,10 +61,13 @@
     });
     const C = contTier(m.continuity || 0), K = [0, 1, 2, 3, 4].map((l) => axes.filter((a) => a.tier !== null && a.tier >= l).length);
     let best = RANKS[0], idx = 0;
-    RANKS.forEach((r, i) => { if (C >= r.C && r.K.every(([l, n]) => K[l] >= n)) { best = r; idx = i; } });
+    const drift = typeof m.drift === 'number' ? m.drift : null, obs = typeof m.observedSteps === 'number' ? m.observedSteps : null; // O: steps the lineage has been observed (selection needs time to act; never the only condition) // null (an older caller) = not judged on drift
+    RANKS.forEach((r, i) => { if (C >= r.C && r.K.every(([l, n]) => K[l] >= n) && (drift === null || drift >= r.D) && (obs === null || obs >= r.O)) { best = r; idx = i; } });
     const nextRank = RANKS[idx + 1] || null, missing = [];
     if (nextRank) {
       if (C < nextRank.C) missing.push(`連続生存期間が段階${nextRank.C}（${CONTINUITY.tiers[nextRank.C - 1]}ステップ以上）に届いていない（最長記録 ${m.continuity}）`);
+      if (obs !== null && obs < nextRank.O) missing.push(`観察期間が足りない（いま${obs}／${nextRank.O}ステップ）`);
+      if (drift !== null && drift < nextRank.D) missing.push(`体の変化（創始時からの形質の動き）が足りない（いま${(drift * 100).toFixed(0)}%／${Math.round(nextRank.D * 100)}%）`);
       for (const [l, n] of nextRank.K) if (K[l] < n) missing.push(`能力の軸のうち、段階${l}以上のものがあと${n - K[l]}つ必要（いま${K[l]}／${n}）`);
     }
     const strong = axes.filter((a) => a.tier !== null && a.tier >= 1).map((a) => `${a.name}（段階${a.tier}）`);
