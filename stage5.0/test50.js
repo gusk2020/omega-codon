@@ -51,7 +51,7 @@ test('1B/5.1：序盤で一気にγ以上へ上がらない。昇格は能力・
   const strong = { alive: 50, observedSteps: 100000, continuity: 300, aging: { value: 1.2, young: 999, old: 999 }, repair: { value: 0.99 }, efficiency: { value: 0.1, intakeRatio: 1 }, range: { value: 4 }, dormancy: { value: 0.95, episodes: 9 }, competition: { value: 20000 }, independence: { value: 1 } };
   assert.ok(R.order.indexOf(R.evaluate({ ...strong, drift: 0.2 }).rank) >= R.order.indexOf('δ'), 'strong abilities and real change reach delta or beyond');
   assert.equal(R.evaluate({ ...strong, drift: 0.0 }).rank, 'α', 'the same abilities without any evolved change stay alpha');
-  assert.equal(R.evaluate({ ...strong, drift: 0.2, observedSteps: 200 }).rank, 'α', 'and a lineage just born is not promoted');
+  assert.equal(R.evaluate({ ...strong, drift: 0.2, observedSteps: 1000 }).rank, 'α', 'and a lineage observed for only 1000 steps is not promoted');
 });
 
 // ---------------- Stage 5.1: milestone saves (a state, not a history) ----------------
