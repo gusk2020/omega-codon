@@ -11,6 +11,8 @@ const cont = (g) => { if (g.checkpoint) g.continueFromCheckpoint(); };
 const Myr = (g) => (g.worldInfo().years - 3.8e9 - 2.9e8) / 1e6;
 const restore = (g) => { const sv = JSON.parse(JSON.stringify(g.save())), b = G.loadGame(E, sv); let n = 0; while (b.replayTo !== null && n++ < 6000) { b.advance(200); cont(b); } return b; };
 
+const runTo = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 4000) { g.advance(250); cont(g); } };
+const view = (g) => { const st = g.live.stats(); return { t: g.t, years: g.worldInfo().years, alive: st.lineageAlive.map((n) => (n > 0 ? 1 : 0)).join(''), best: g.rank.best && g.rank.best.rank, codex: g.codex().map((e) => e.id).sort().join(','), feats: g.feats().map((e) => e.id).sort().join(','), ach: g.achievements.length, seq: g.eventSeq }; };
 let shared = null;
 test('1A：+309 Myrを越えても世界の時間が進み続ける（速度切替・停止/再開つき）', () => {
   const g = mk(3), speeds = [10, 30, 100, 400, 1500, 6000]; let k = 0, n = 0;
@@ -53,8 +55,6 @@ test('1B/5.1：序盤で一気にγ以上へ上がらない。昇格は能力・
 });
 
 // ---------------- Stage 5.1: milestone saves (a state, not a history) ----------------
-const runTo = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 4000) { g.advance(250); cont(g); } };
-const view = (g) => { const st = g.live.stats(); return { t: g.t, years: g.worldInfo().years, alive: st.lineageAlive.map((n) => (n > 0 ? 1 : 0)).join(''), best: g.rank.best && g.rank.best.rank, codex: g.codex().map((e) => e.id).sort().join(','), feats: g.feats().map((e) => e.id).sort().join(','), ach: g.achievements.length, seq: g.eventSeq }; };
 test('5.1 節目セーブ：保存→読込は数秒以内で、同じ世界・同じ系統・同じ記録から再開できる（全履歴の再生なし）', () => {
   const g = mk(3, { creatures: ['standard'], start: false }); runTo(g, 30000);
   const snap = g.milestone(); assert.ok(snap, 'a milestone can be taken'); const json = JSON.stringify(snap);
