@@ -138,10 +138,10 @@ test('災厄後の継続：地球の生命圏が絶えても、地球外に生�
 
 // ---------- rank progress ----------
 test('ランクの進捗：現在と歴代最高は別。次のランクの条件・不足量・有効な戦略とその代償を数値で示す（γ→δ）', () => {
-  const m = { alive: 50, observedSteps: 9000, continuity: 200, aging: { value: 2.0, young: 999, old: 999 }, repair: { value: 0.97 }, efficiency: { value: 0.2, intakeRatio: 1 }, range: { value: 3 }, dormancy: { value: null, episodes: 0 }, competition: { value: 5000 }, independence: { value: 1 } };
-  // Stage 5.0: gamma needs a tier-2 axis (repair 0.97 here) and continuity 150; delta needs continuity 250 (it was 300 before the rank balance change)
+  const m = { alive: 50, observedSteps: 9000, drift: 0.1, continuity: 180, aging: { value: 2.0, young: 999, old: 999 }, repair: { value: 0.97 }, efficiency: { value: 0.2, intakeRatio: 1 }, range: { value: 3 }, dormancy: { value: null, episodes: 0 }, competition: { value: 5000 }, independence: { value: 1 } };
+  // Stage 5.0: gamma needs a tier-2 axis (repair 0.97 here) and continuity 150; delta needs continuity 200 (it was 300 before the rank balance change); drift 0.1 and 9000 observed steps meet gamma's other bars
   const res = RK.evaluate(m), p = RK.progress(res, m); assert.equal(res.rank, 'γ'); assert.equal(p.from, 'γ'); assert.equal(p.to, 'δ');
-  const reqs = Object.fromEntries(p.requirements.map((r) => [r.id, r])); assert.ok(!reqs.continuity.met && reqs['axes-1'].met, 'gamma to delta: the continuity record is short'); assert.equal(reqs.continuity.short, 50);
+  const reqs = Object.fromEntries(p.requirements.map((r) => [r.id, r])); assert.ok(!reqs.continuity.met && reqs['axes-1'].met, 'gamma to delta: the continuity record is short'); assert.equal(reqs.continuity.short, 20);
   assert.ok(p.done > 0.5 && p.done < 1); assert.ok(RK.progress({ judged: false, reason: 'x' }).judged === false);
   const low = { ...m, continuity: 100 }, pl = RK.progress(RK.evaluate(low), low); assert.ok(pl.requirements[0].short > 0 || pl.to === null || pl.from === 'α', 'continuity shortfall is a number'); const top = RK.evaluate({ ...m, continuity: 6000, aging: { value: 1.0, young: 999, old: 999 }, repair: { value: 0.999 }, efficiency: { value: 0.05, intakeRatio: 1 }, range: { value: 4 }, dormancy: { value: 0.99, episodes: 99 }, competition: { value: 999999 }, independence: { value: 9 } });
   assert.notEqual(RK.progress(top, m).to, 'Ω', 'the next of the top judged rank is never Omega'); assert.equal(top.omega.judgeable, false);

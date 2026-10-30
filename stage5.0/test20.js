@@ -176,13 +176,13 @@ test('1.9D 節目: 注目系統がすべて絶えたら止まって知らせる�
   assert.ok(hit, 'no seed lost the focus lineage'); assert.ok(hit.events.some((e) => e.text.includes('敗北条件は未実装'))); const t = hit.t; hit.continueFromCheckpoint(); hit.advance(100); assert.ok(hit.t > t, 'observation continues');
 });
 test('1.9D ランク: αから、複数の経路で同じランクに届き、能力の「合計」や知能では決まらない。Ωは判定しない', () => {
-  const base = { continuity: 130, alive: 50, observedSteps: 2000, aging: { value: 3.4, young: 5000, old: 8000 }, repair: { value: 0.9 }, efficiency: { value: 0.28, intakeRatio: 1.0 }, range: { value: 4 }, dormancy: { value: 0.5, episodes: 300 }, competition: { value: 1500 } };
+  const base = { continuity: 130, alive: 50, observedSteps: 200000, drift: 0.3, aging: { value: 3.4, young: 5000, old: 8000 }, repair: { value: 0.9 }, efficiency: { value: 0.28, intakeRatio: 1.0 }, range: { value: 4 }, dormancy: { value: 0.5, episodes: 300 }, competition: { value: 1500 } };
   assert.equal(RK.evaluate(base).rank, 'α'); assert.equal(RK.evaluate({ ...base, alive: 3 }).judged, false); assert.equal(RK.evaluate({ ...base, observedSteps: 100 }).judged, false);
   const lowMet = { ...base, continuity: 320, aging: { value: 1.2, young: 5000, old: 8000 }, efficiency: { value: 0.1, intakeRatio: 1 }, dormancy: { value: 0.9, episodes: 900 } };
   const repairer = { ...base, continuity: 320, repair: { value: 0.99 }, competition: { value: 60000 }, aging: { value: 1.7, young: 5000, old: 8000 } };
   const a = RK.evaluate(lowMet), b = RK.evaluate(repairer); assert.equal(a.rank, b.rank, `${a.rank} ${b.rank}`); assert.ok(RK.order.indexOf(a.rank) >= 3);
   assert.notDeepEqual(a.axes.filter((x) => x.tier >= 2).map((x) => x.id), b.axes.filter((x) => x.tier >= 2).map((x) => x.id), 'the two routes must use different abilities');
-  const top = RK.evaluate({ continuity: 99999, alive: 100, observedSteps: 99999, aging: { value: 1, young: 9e5, old: 9e5 }, repair: { value: 1 }, efficiency: { value: 0.01, intakeRatio: 2 }, range: { value: 4 }, dormancy: { value: 1, episodes: 999 }, competition: { value: 1e9 } });
+  const top = RK.evaluate({ continuity: 99999, alive: 100, observedSteps: 999999, drift: 0.5, aging: { value: 1, young: 9e5, old: 9e5 }, repair: { value: 1 }, efficiency: { value: 0.01, intakeRatio: 2 }, range: { value: 4 }, dormancy: { value: 1, episodes: 999 }, competition: { value: 1e9 } });
   assert.equal(top.rank, 'θ'); assert.equal(top.omega.judgeable, false); assert.ok(top.omega.text.includes('Ω達成を表示することはありません')); assert.ok(!RK.order.includes('Ω'));
   assert.ok(a.missing.length >= 0 && typeof a.reason === 'string' && a.reason.length > 0); const starved = RK.evaluate({ ...lowMet, efficiency: { value: 0.05, intakeRatio: 0.5 } }); assert.equal(starved.axes.find((x) => x.id === 'efficiency').tier, null, 'low spending from starvation is not efficiency');
   const noData = RK.evaluate({ ...lowMet, dormancy: { value: 0.99, episodes: 5 } }); assert.equal(noData.axes.find((x) => x.id === 'dormancy').tier, null);

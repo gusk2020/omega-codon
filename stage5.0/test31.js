@@ -105,7 +105,7 @@ test('少数長寿型と多数繁殖型：どちらも計算され、結果は�
   console.log('  long-lived vs prolific:', JSON.stringify(rows)); assert.equal(rows.length, 4); assert.ok(rows.some((r) => r.lowAlive > 0 || r.fecAlive > 0));
 });
 test('ランク条件表示と実判定の一致：表示された不足を満たすと、実際に次のランクになる。条件が足りないうちは次にならない', () => {
-  const base = { alive: 50, observedSteps: 900, continuity: 200, aging: { value: 3, young: 50, old: 50 }, repair: { value: 0.9 }, efficiency: { value: 0.3, intakeRatio: 1 }, range: { value: 2 }, dormancy: { value: 0.5, episodes: 40 }, competition: { value: 100 } };
+  const base = { alive: 50, observedSteps: 200000, drift: 0.3, continuity: 120, aging: { value: 3, young: 50, old: 50 }, repair: { value: 0.9 }, efficiency: { value: 0.3, intakeRatio: 1 }, range: { value: 2 }, dormancy: { value: 0.5, episodes: 40 }, competition: { value: 100 } };
   for (const [start, mut] of [[base, {}], [{ ...base, continuity: 320, repair: { value: 0.93 } }, {}], [{ ...base, continuity: 650, repair: { value: 0.97 }, range: { value: 3 }, dormancy: { value: 0.8, episodes: 40 }, aging: { value: 2, young: 50, old: 50 } }, {}]]) {
     const res = RK.evaluate(start), ck = RK.checklist(res, start); assert.ok(ck.judged); assert.ok(!ck.allMet, 'a rank that is not reached is never shown as complete'); assert.equal(ck.from, res.rank);
     const fixed = { ...start }; const axes = ck.items.filter((i) => i.id !== 'continuity'); const next = RK.RANKS.find((r) => r.id === ck.to);
