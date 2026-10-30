@@ -132,7 +132,7 @@
     const sv = readSaves()[k]; if (!sv) return;
     let g; try { g = G.loadGame(E, sv); } catch (e) { toast('読み込めませんでした：' + String(e.message || e) + '（保存データは消していません）'); return; }
     playing = false; loading = { g, target: sv.t, savedAt: sv.ts };
-    const card = $('modal-card'); card.innerHTML = `<h3>読み込み中…</h3><p class="note">${sv.label}<br>保存した地点まで再現しています（同じ結果になります）。</p><div class="prog"><div id="prog"></div></div>`;
+    const card = $('modal-card'); card.innerHTML = `<h3>読み込み中…</h3><p class="note">${sv.label}<br>${sv.kind === 'milestone' ? '節目の保存から再開します（すぐ終わります）。' : '古い形式のセーブです。最初から操作を再現するため、時間がかかります（同じ結果になります）。'}</p><div class="prog"><div id="prog"></div></div>`;
     $('modal').hidden = false; $('start').hidden = true; $('play').hidden = false;
     const tick = () => {
       const t0 = performance.now();
