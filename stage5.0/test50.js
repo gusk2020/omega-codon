@@ -86,4 +86,28 @@ test('5.1 節目の間は保存されない：通常進行のadvanceはセーブ
   assert.ok(!/putSave\('auto'\)[^]{0,0}/.test(src.replace(/const autoSaved = putSave\('auto'\)/, '')), 'putSave(auto) is only called at the milestone screen');
   assert.ok(src.includes('if (!game || !game.checkpoint) return false;'), 'putSave refuses outside a milestone screen');
 });
+
+// ---------------- Stage 5.2 ----------------
+const W = require('./world');
+test('5.2 世界時間の表示：万年の桁まで、過去・現在・未来の符号と丸めが正しい', () => {
+  const w = W.create(3, { history4: true }), P = w.presentYears, f = (y) => { w.years = y; return W.formatBP(w); };
+  assert.equal(f(0), '38億年前'); assert.equal(f(P), '現代'); assert.equal(f(P - 5.1234e8), '5億1234万年前'); assert.equal(f(P - 1e8), '1億年前'); assert.equal(f(P - 9.9999e7), '9999万年前');
+  assert.equal(f(P - 3e4), '3万年前'); assert.equal(f(P - 123), '123年前'); assert.equal(f(P + 5.1234e8), 'いまから5億1234万年後'); assert.equal(f(P + 5e4), 'いまから5万年後'); assert.equal(f(P + 0.5), '現代');
+  // a clock that moves by 1,000,000 years must change its text (the old display rounded to 0.01 億年 = 1,000,000 years and hid smaller moves)
+  assert.notEqual(f(P - 3e8), f(P - 3e8 - 1e4));
+});
+test('5.2 表示はシミュレーションに影響しない：worldInfoを何度読んでも状態が変わらない', () => {
+  const a = mk(3, { start: false }), b = mk(3, { start: false }); runTo(a, 8000); runTo(b, 8000);
+  for (let i = 0; i < 50; i++) { a.worldInfo(); a.worldInfo().bpText; } runTo(a, 9000); runTo(b, 9000);
+  assert.equal(a.worldInfo().years, b.worldInfo().years); assert.equal(a.live.stats().population, b.live.stats().population); assert.equal(a.worldInfo().elapsedText, W.jaYears(a.worldInfo().years));
+});
+test('5.2 セーブ復元後の世界時間：読込直後は保存時と同じで、その後の進み方は保存せず続けた場合と一致する（複数シード）', () => {
+  for (const seed of [3, 5]) {
+    const g = mk(seed, { start: false }); g.setAutoContinuous(false); let n = 0; while (!g.checkpoint && g.t < 150000 && n++ < 4000) { g.advance(250); if (g.pending) g.choose('auto', 'once'); }
+    assert.ok(g.checkpoint, 'a milestone was reached (seed ' + seed + ')');
+    const b = G.loadGame(E, JSON.parse(JSON.stringify(g.milestone()))); assert.equal(b.worldInfo().years, g.worldInfo().years, 'no jump on load'); assert.equal(b.t, g.t);
+    for (const x of [g, b]) { x.setAutoContinuous(true); cont(x); } const ya = [], yb = []; for (let i = 0; i < 30; i++) { g.advance(250); cont(g); b.advance(250); cont(b); ya.push(g.worldInfo().years); yb.push(b.worldInfo().years); }
+    assert.deepEqual(yb, ya, 'the loaded game advances exactly like the game that was not saved (seed ' + seed + ')');
+  }
+});
 const bad = results.filter((r) => r[1] === 'FAIL'); console.log(`\n${results.length - bad.length}/${results.length} passed`); process.exit(bad.length ? 1 : 0);

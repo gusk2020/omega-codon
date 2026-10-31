@@ -18,7 +18,7 @@ function worldRun(seed, toYears, o = {}) { const w = W.create(seed, { history4: 
 test('開始：原始の海の単細胞の8系統から始まり、高度な文明も陸と空の食べ物もまだない（約38億年前の仮定）', () => {
   const g = S4(); assert.equal(g.cfg.stage, 4); assert.equal(g.creatures.length, 8); const ind = g.live.individuals(); assert.ok(ind.length >= 90);
   assert.ok(ind.every((x) => x.patch === 0), 'every first cell is in the water'); assert.equal(new Set(ind.map((x) => x.lin)).size, 8, 'all eight lineages are there');
-  const wi = g.worldInfo(); assert.equal(Math.round(wi.presentYears / 1e8), 38); assert.ok(/38\.00億年前/.test(wi.bpText)); assert.equal(wi.civ, null);
+  const wi = g.worldInfo(); assert.equal(Math.round(wi.presentYears / 1e8), 38); assert.ok(/38億年前/.test(wi.bpText)); assert.equal(wi.civ, null);
   const c = H4.conditions(3.8e9); assert.ok(c.o2 < 0.05 && c.res[1] <= 0.05 && c.res[3] <= 0.05 && c.prey <= 0.05, 'no oxygen, no land food, no air food, no animals to hunt');
   assert.ok(g.events[0].text.includes('推定'), 'the start is recorded as an estimate');
 });
