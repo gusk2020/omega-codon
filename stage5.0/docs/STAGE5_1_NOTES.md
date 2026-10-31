@@ -21,3 +21,17 @@ Stage 5.0 failed every item on a Pixel 7a: the world clock froze for seconds aft
 - Saves are possible only on continue screens; progress after the last one is lost on load (stated on screen).
 - Phone speed is not measured: all numbers above are from a desktop. Pixel 7a still has to confirm them.
 - 1C (full-history replay) is gone for new saves; old-format saves still replay slowly.
+
+# Stage 5.2
+
+## World clock shown to the 10,000-year digit
+`WORLD.jaYears` / `formatBP`: 5億1234万年前, いまから5億1234万年後, 9999万年, 123年前, 現代. Before, the past was rounded to 0.01 億 (1,000,000 yr) and looked frozen while the clock moved by less. The HUD sub-line uses the same function (`worldInfo().elapsedText`) and shows `⏩ +N万年` for 5 s after any jump of 1,000,000 yr or more. Display only: the simulation never reads it (tested).
+
+## "The clock jumps after loading a save" - cause found, not a restore fault
+Seeds 3 and 5, saved at a real continue-screen, loaded, then both the loaded game and the unsaved original advanced 30 x 250 steps: world years are identical at every point (and identical right after loading). The jump is the model's own variable step: near the present a civilisation lives for a long stretch and the clock barely moves (leaps <= a few thousand years), then it ends and the next leaps are 25-50 Myr each. Saved or not, the player sees the same.
+
+## Measured load (desktop, 60 s run, CPU profile)
+- Individual stepping (`engine19.js` stepOnce, expressGenes, develop, rawTraitDrive, ...) 76 %; garbage collection 11 %; depth-habitat box 7 %; game layer (means, rank, codex, events) 5 %; world/civilisation 0.2 %.
+- Cost is linear in population: 0.23 ms/step under 100 individuals, 0.36 at 100-199, 0.48 at 200-299, 0.67 at 300-399, 0.84 at 400-499, 1.05 at 500+. Populations above 400 occur about 1.5 % of the time.
+- Tried and dropped: caching each individual's habitat box (bit-identical results but no measurable gain, within noise or slightly slower). Not done: a population cap (changes evolution outcomes) and anything in the individual engine (out of scope).
+- Conclusion: the remaining cost is the per-individual engine; history, rank, UI and approximation are too small to be worth touching.
