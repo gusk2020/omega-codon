@@ -4,7 +4,7 @@
   'use strict';
   const NODE = typeof module === 'object' && typeof require === 'function';
   const RK = NODE ? require('./rank') : globalThis.OmegaRank;
-  const DISH = NODE ? require('./dish') : globalThis.OmegaDish, CDX = NODE ? require('./codex4') : globalThis.OmegaCodex;
+  const DISH = NODE ? require('./dish') : globalThis.OmegaDish, DISH2 = NODE ? require('./dish2') : globalThis.OmegaDish2, CDX = NODE ? require('./codex4') : globalThis.OmegaCodex;
   const OFF = NODE ? require('./offworld') : globalThis.OmegaOffworld, NICHE = NODE ? require('./niche') : globalThis.OmegaNiche, WORLD = NODE ? require('./world') : globalThis.OmegaWorld, CIVM = NODE ? require('./civilization') : globalThis.OmegaCiv, HIST = NODE ? require('./earthhistory') : globalThis.OmegaHistory, BG = NODE ? require('./background') : globalThis.OmegaBackground, AD = NODE ? require('./adaptation') : globalThis.OmegaAdaptation;
   // The game layer. It owns no science: it picks founders, advances the Stage 1.7 engine, notices notable things, and offers the
   // player a small number of environment-wide interventions. Nothing here favours a lineage or a trait.
@@ -430,7 +430,7 @@
       tb.leapYears += D; tb.leaps++; tb.skipGens += D / (genSteps * YPS); tb.lastLeapT = live.t; tb.wc = creatures.map(() => []);
       tb.leapLog.push({ t: st.t, years: D, atYears: wm.years, extinct: rep.extinct.slice(), extrapolated: growth.map((g, i) => (g < 0 && st.lineageAlive[i] > 0 ? i : -1)).filter((i) => i >= 0), kept: rep.kept.slice(), reseeded: rep.reseeded.slice(), removed: rep.removed.slice() }); if (tb.leapLog.length > 60) tb.leapLog.shift();
       if (wm.pendingDisaster) { live.disaster(wm.pendingDisaster); wm.pendingDisaster = 0; }
-      updateScenario(); pushEffects(live.stats(), null); if (S3) offStep(D, live.stats()); raiseMilestones(); checkEndOfHistory();
+      updateScenario(); pushEffects(live.stats(), null); if (S3) offStep(D, live.stats()); raiseMilestones(); checkEndOfHistory(); if (siteBook) recordSites();
           };
       if (S4 && startApprox(D / YPS, post)) return 'deferred';
       post();
@@ -607,6 +607,7 @@
     }
     function afterTail() {
       if (live.t % DETECT_EVERY === 0 || live.done) detect();
+      if (siteBook && live.t % 100 === 0) recordSites();
       if (S31 && live.t % DETECT_EVERY === 0) evoNotes();
       if (live.t === nextCp && !game.checkpoint) { if (legacyReplay()) nextCp += cp.every; else game.checkpoint = { t: live.t, kind: 'interval' }; }
       applyReplayEntries();
@@ -775,6 +776,38 @@
       dishCache = { t: live.t, v }; return v;
     };
 
+    // ======== Stage 6: the circular dish. The sites a lineage has held are recorded from where living individuals really are (see dish2.js). ========
+    const siteBook = S4 ? DISH2.newBook(creatures.length) : null, REALM_NAMES = ['water', 'land', 'underground', 'air'];
+    const hash01 = (id) => { let h = (id * 2654435761) >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13; return (h >>> 0) / 4294967296; };
+    function recordSites() {
+      if (!siteBook || !wm) return; const inds = live.individuals(); if (!inds.length) { DISH2.record(siteBook, [], wm.years); return; }
+      const amb = WORLD.ambient(wm), ce = WORLD.catEffects(wm), prof = REALM_NAMES.map((id, r) => NICHE.profile(id, amb.warmSolar + amb.warmCiv + (ce ? ce.dT[r] : 0))), means = lineageTraitMeans(), bxf = NICHE.makeBox(E), box = creatures.map((c, i) => { const m = means[i]; if (!m) return null; const o = new Float64Array(4); bxf(m.mean, false, o); return Array.from(o); });
+      const acc = new Map();
+      for (const q of inds) {
+        const rn = REALM_NAMES[q.patch], p = prof[q.patch]; let side, T, P;
+        if (rn === 'land') { const b = box[q.lin]; if (!b) continue; side = 'land'; P = DISH2.P_ATM; T = b[0] + (b[1] - b[0]) * hash01(q.id); } // provisional: land has no temperature bins, so individuals are spread over their lineage's tolerated range
+        else { if (!p) continue; side = rn === 'water' ? 'water' : 'land'; T = p.T[q.zb]; P = p.P[q.zb]; }
+        const s = DISH2.siteOf(side, T, P), key = DISH2.siteKey(side, s.row, s.ring), k = q.lin * 1e6 + key; acc.set(k, (acc.get(k) || 0) + 1);
+      }
+      DISH2.record(siteBook, [...acc].map(([k, n]) => ({ lin: Math.floor(k / 1e6), key: k % 1e6, n })), wm.years);
+    }
+    let dish2Cache = { t: -1, v: null };
+    game.dish2 = () => {
+      if (!S4) return null; if (dish2Cache.t === live.t && dish2Cache.v) return dish2Cache.v;
+      const st = live.stats(), dom = game.dominance() || [], wi = game.worldInfo(), amb = WORLD.ambient(wm);
+      const lineages = creatures.map((c, i) => {
+        if (!ever[i]) return null; const d = dom[i], inf = d && d.value !== null && d.value !== undefined ? d.value : 0, bs = DISH2.beads(siteBook, i), tot = bs.reduce((a, b) => a + b.n, 0);
+        return { lin: i, id: c.id, name: c.name, color: c.color, alive: st.lineageAlive[i], extinct: st.lineageAlive[i] === 0, extinctAt: extinctAt[i], influence: inf, influenceReliable: !!(d && d.reliable !== false && d.parts), beads: bs.map((b) => ({ ...b, share: tot ? b.n / tot : 0, size: inf * (tot ? b.n / tot : 0) })) };
+      }).filter(Boolean);
+      let civ = null; if (wi && wi.civ) { const f = DISH2.fractionOfTemperature(NICHE.TREF + amb.warmSolar + amb.warmCiv), p = DISH2.place('land', f, DISH2.P_ATM); civ = { x: p.x, y: p.y, T: wi.civ.T, stage: wi.civ.stage, N: wi.civ.N, size: Math.min(1, wi.civ.T / 8), reach: wi.civ.reach, pollution: wi.residue.pollution, placement: 'provisional' }; }
+      const past = wi ? wi.history.map((h) => ({ born: h.born, ended: h.ended, peakT: h.peakT })) : [];
+      const v = { t: live.t, years: wi ? wi.years : 0, presentYears: wi ? wi.presentYears : null, rAtm: DISH2.R_ATM, lineages, civ, pastCivs: past, focus: controlled, sources: DISH2.SOURCES };
+      dish2Cache = { t: live.t, v }; return v;
+    };
+    // the eight abilities of a lineage as 0..1 (each trait scaled over its own allowed range; dormancy is shown as depth, so deeper = more). Means over living individuals only.
+    const ABILITIES = [['tolerance', '耐性', '暑さ・寒さ・圧力・病気へのたえやすさ'], ['metabolism', '代謝', '活動の速さ。高いほど動けるが、燃料を多く使う'], ['repairRate', '修復', '傷や劣化を直す力'], ['dormancyDepth', '休眠', '飢えや危機を休眠でしのぐ深さ'], ['predation', '捕食', '獲物を捕る力'], ['movement', '移動', '場所を動く力'], ['immune', '免疫', '病気に強い度合い'], ['fecundity', '繁殖', '子を残す力']];
+    game.abilities = (lin) => { const m = lineageTraitMeans()[lin]; if (!m) return null; const nr = normOf(m.mean); return { lin, name: creatures[lin].name, count: m.count, items: ABILITIES.map(([k, ja, text]) => ({ id: k, name: ja, text, value: nr[k] })), note: '個体の形質の平均を、それぞれの取りうる範囲で0〜1にしたものです（生きている個体のみ）。' }; };
+    game.sel = null; // the lineage the player is looking at on the dish / tree / codon screens (an id from the creature roster; kept in milestone saves)
     // ======== Stage 4.0: the collection, heritage, feats and the Omega verdict. Everything is READ from the simulation; none of it is fed back into it, except the heritage
     // relics (which the engine lets survivors pick up by chance) and the player's stances. A discovery never grants an ability. ========
     const nameUse = new Map(), codexMap = new Map(), featMap = new Map(); game.achievements = []; game.codexNew = []; game.featsNew = [];
@@ -929,7 +962,7 @@
       if (!S4 || !TB || approx) return null;
       const tbKeep = {}; for (const k of ['lastLeapT', 'leapYears', 'skipGens', 'leaps', 'takenTotal', 'harmTotal', 'episodes', 'gapNote', 'attackTotal', 'attackFrac', 'blocked', 'approxSteps', 'approxLeaps', 'lastStance', 'ended']) tbKeep[k] = tb[k];
       return plain({ v: 10, kind: 'milestone', cfg: game.cfg, t: live.t, autoContinuous: game.autoContinuous, wm, off, bg, tb: tbKeep, ever, extinctAt, recordAge, streak, firstSeen, strategies, controlled,
-        peakLin, peakRealm, everRealm, founderMean, clock, eventSeq, events: game.events.slice(-120), achievements: game.achievements, codex: [...codexMap], feats: [...featMap], nameUse: [...nameUse], formSeen: [...formSeen],
+        peakLin, peakRealm, everRealm, founderMean, sites: siteBook, sel: game.sel, clock, eventSeq, events: game.events.slice(-120), achievements: game.achievements, codex: [...codexMap], feats: [...featMap], nameUse: [...nameUse], formSeen: [...formSeen],
         soloSteps, extSteps, omegaHeld, omega: game.omega, rank: { best: game.rank.best, history: game.rank.history, byLin: game.rank.byLin, current: game.rank.current },
         arena: live.exportArena(6) });
     };
@@ -938,7 +971,7 @@
       mergeInto(wm, resume.wm); for (const [k, ex] of [['off', off], ['bg', bg]]) if (ex && resume[k]) mergeInto(ex, resume[k]);
       mergeInto(tb, resume.tb); tb.wc = creatures.map(() => []);
       resume.ever.forEach((v, i) => { ever[i] = v; }); resume.extinctAt.forEach((v, i) => { extinctAt[i] = v; }); resume.recordAge.forEach((v, i) => { recordAge[i] = v; }); resume.streak.forEach((v, i) => { streak[i] = v; }); resume.firstSeen.forEach((v, i) => { firstSeen[i] = v; });
-      resume.peakLin.forEach((v, i) => { peakLin[i] = v; }); resume.peakRealm.forEach((v, i) => { peakRealm[i] = v; }); resume.everRealm.forEach((v, i) => { everRealm[i] = v; }); (resume.founderMean || []).forEach((v, i) => { founderMean[i] = v; });
+      resume.peakLin.forEach((v, i) => { peakLin[i] = v; }); resume.peakRealm.forEach((v, i) => { peakRealm[i] = v; }); resume.everRealm.forEach((v, i) => { everRealm[i] = v; }); (resume.founderMean || []).forEach((v, i) => { founderMean[i] = v; }); if (typeof resume.sel === 'string') game.sel = resume.sel; if (siteBook && resume.sites && Array.isArray(resume.sites.lin)) resume.sites.lin.forEach((v, i) => { if (siteBook.lin[i]) siteBook.lin[i] = v; });
       resume.strategies.forEach((v, i) => { strategies[i] = v; if (STRATEGIES[v]) live.setStance(i, STRATEGIES[v].code); }); controlled = resume.controlled;
       Object.assign(clock, resume.clock); eventSeq = resume.eventSeq; for (const e of resume.events) game.events.push(e);
       game.achievements = resume.achievements; for (const [k, v] of resume.codex) codexMap.set(k, v); for (const [k, v] of resume.feats) featMap.set(k, v); for (const [k, v] of resume.nameUse) nameUse.set(k, v); for (const [k, v] of resume.formSeen) formSeen.set(k, v);

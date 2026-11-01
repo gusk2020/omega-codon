@@ -81,7 +81,7 @@
 
   // ---------- play ----------
   function begin(g) {
-    game = g; document.body.classList.toggle('s31', g.cfg.stage >= 3.1); document.body.classList.toggle('s4', g.cfg.stage === 4); if (g.cfg.stage >= 3.1) $('skip').textContent = '⏭ 次の出来事';
+    game = g; document.body.classList.toggle('s31', g.cfg.stage >= 3.1); document.body.classList.toggle('s4', g.cfg.stage === 4); if ($('dishpanel')) { $('dishpanel').hidden = g.cfg.stage !== 4; dpKey = ''; } if (g.cfg.stage >= 3.1) $('skip').textContent = '⏭ 次の出来事';
     if (g.cfg.stage === 4) { $('tabs').innerHTML = '<button data-tab="codex" class="on">図鑑</button><button data-tab="phylo">系統樹</button><button data-tab="codon">コドン</button><button data-tab="feats">偉業</button><button data-tab="log">年表</button><button data-tab="detail">詳細</button>'; tab = 'codex'; runId = Date.now(); const m = Meta.load()[g.cfg.heritage ? 'special' : 'normal'] || Meta.blank(); metaKnown = new Set(Object.keys(m.codex)); achSeen = 0; secSmooth = null; metaT = -1; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) $('tab-' + id).hidden = id !== 'codex'; } else { $('tabs').innerHTML = TABS_ORIG; tab = 'world'; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) { const e = $('tab-' + id); if (e) e.hidden = id !== 'world'; } $('detailnav').hidden = true; }
     updateMapCap(); startTraits = g.series[0] ? g.series[0].traits.slice() : null; playing = true; lastAuto = g.t;
     $('start').hidden = true; $('play').hidden = false; $('modal').hidden = true;
@@ -1055,7 +1055,68 @@
     d.sectors.forEach((s) => { const a = (s.a0 - 0.25) * 2 * Math.PI; cx.strokeStyle = 'rgba(160,175,190,0.35)'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(cxp, cyp); cx.lineTo(cxp + Math.cos(a) * R0, cyp + Math.sin(a) * R0); cx.stroke(); const m = ((s.a0 + s.a1) / 2 - 0.25) * 2 * Math.PI; picto(cx, KIND_PIC[s.id], cxp + Math.cos(m) * (R0 + 0) * 0.93, cyp + Math.sin(m) * R0 * 0.93, 6, 'rgba(225,232,240,0.85)'); });
     if (d.shape.like) { cx.fillStyle = 'rgba(240,245,250,0.9)'; cx.font = '600 15px system-ui'; cx.textAlign = 'center'; cx.fillText('Ω形', cxp, cyp + 5); cx.textAlign = 'left'; }
   }
-  function updateMapCap() { const el = $('mapcap'); if (el) el.textContent = S4() ? '扇＝場所／扇の中は時計回りが高温／中心＝高圧' : '円の大きさ＝環境支配力（個体数ではない）／点線＝参考の道筋'; }
+
+  // ======== Stage 6: the circular dish (dish2.js / dishview.js). The view state is plain UI state; nothing here changes the simulation. ========
+  const DV = OmegaDishView, dview = DV.newView(); let dvGame = null, d2K = -1, d2V = null, gaugeStyle = 'needle', abilOpen = null, legendOpen = false;
+  const selLin = () => { if (!game || !game.sel) return null; const i = game.creatures.findIndex((c) => c.id === game.sel); return i < 0 ? null : i; };
+  function setSel(lin) { game.sel = lin === null ? null : game.creatures[lin].id; abilOpen = null; draw(true); }
+  const dish2Now = () => { const k = Math.floor(game.t / 25); if (d2K !== k || dvGame !== game) { d2K = k; dvGame = game; const v = game.dish2(); d2V = v; } return d2V; };
+  function drawDish2() {
+    const [W, H2] = fit(cv, cx), d = dish2Now(); if (!d) return; dview.sel = selLin(); DV.draw(cx, W, H2, d, dview); drawDishPanel(d);
+  }
+  const ICONS = { tolerance: '🛡️', metabolism: '🔥', repairRate: '🩹', dormancyDepth: '💤', predation: '🦷', movement: '👣', immune: '🧪', fecundity: '🥚' };
+  function gaugeSvg(v) {
+    const x = Math.max(0, Math.min(1, v));
+    if (gaugeStyle === 'bars') { let s = '<svg viewBox="0 0 40 28" width="44" height="30" aria-hidden="true">'; for (let i = 0; i < 5; i++) { const on = x > i / 5 + 0.01, h = 6 + i * 4; s += `<rect x="${2 + i * 7.5}" y="${26 - h}" width="5.5" height="${h}" rx="1" fill="${on ? '#6fd3a0' : '#2c3b4a'}"/>`; } return s + '</svg>'; }
+    const ang = (-90 + 180 * x) * Math.PI / 180, nx = 20 + 14 * Math.sin(ang), ny = 24 - 14 * Math.cos(ang);
+    return `<svg viewBox="0 0 40 28" width="44" height="30" aria-hidden="true"><path d="M4 24 A16 16 0 0 1 36 24" fill="none" stroke="#2c3b4a" stroke-width="4"/><path d="M4 24 A16 16 0 0 1 36 24" fill="none" stroke="#6fd3a0" stroke-width="4" stroke-dasharray="${(50.3 * x).toFixed(1)} 60"/><line x1="20" y1="24" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#e8eef5" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="24" r="2.2" fill="#e8eef5"/></svg>`;
+  }
+  let dpKey = '';
+  function drawDishPanel(d) {
+    const el = $('dishpanel'); if (!el) return; el.hidden = false;
+    const sl = selLin(), L = sl === null ? null : d.lineages.find((l) => l.lin === sl), ab = L ? game.abilities(sl) : null, rk = L ? game.rank.byLin[sl] : null;
+    const key = [game.t, sl, dview.mode, gaugeStyle, abilOpen, legendOpen].join('|'); if (key === dpKey) return; dpKey = key;
+    const aliveN = L ? L.beads.filter((b) => b.alive).length : 0, vac = L ? L.beads.length - aliveN : 0;
+    let h = `<div class="dp-row"><button class="chip${dview.mode === 'path' ? ' on' : ''}" data-dm="path">進化経路</button><button class="chip${dview.mode === 'territory' ? ' on' : ''}" data-dm="territory">勢力圏</button><button class="chip" data-dact="reset">表示を戻す</button><button class="chip${legendOpen ? ' on' : ''}" data-dact="legend">凡例</button></div>`;
+    if (legendOpen) h += '<div class="dp-legend">' + DV.LEGEND.map(([k, t]) => `<div><b>${k}</b><span>${t}</span></div>`).join('') + `<div><b>注意</b><span>${d.sources.land}</span></div><div><b>注意</b><span>${d.sources.civ}</span></div><div><b>代理</b><span>${d.sources.influence}</span></div><div><b>表示</b><span>未来が遠いほど枝を少し広げて描きます（見やすくするための表示で、計算結果は変えません）。絶滅した系統で、場所の記録がないものは、記録開始前に絶えたためです。</span></div></div>`;
+    if (!L) h += `<div class="dp-sel dim">円の中の点か、下の系統の名前をタップすると、その系統の情報が出ます。<br>${d.lineages.filter((l) => !l.extinct).length}系統が現存、${d.lineages.filter((l) => l.extinct).length}系統が絶滅。</div>` + `<div class="dp-chips">${d.lineages.map((l) => `<button class="lchip${l.extinct ? ' dead' : ''}" data-dl="${l.lin}" style="--c:${l.color}"><i></i><b>${l.name}</b><span>${l.extinct ? '絶' : l.alive + '体'}</span></button>`).join('')}</div>`;
+    else {
+      h += `<div class="dp-sel" style="border-color:${L.color}"><div class="dp-name"><i style="background:${L.color}"></i><b>${L.name}</b><span>${L.extinct ? '絶滅' + (L.extinctAt !== null && L.extinctAt !== undefined ? '（' + L.extinctAt + 'ステップ）' : '') : '現存 ' + L.alive + '体'}</span></div>`
+        + `<div class="dp-meta">ランク：現在 <b>${rk && rk.current ? rk.current.rank : '—'}</b> ／ 最高 <b>${rk && rk.best ? rk.best.rank : '—'}</b>　場所：現存 ${aliveN} ／ 絶滅 ${vac}　環境支配力 ${L.influenceReliable ? L.influence.toFixed(2) : '（算出中）'}</div>`
+        + `<div class="dp-row"><button class="chip" data-dact="tree">系統樹で見る</button><button class="chip" data-dact="codon">コドンで見る</button><button class="chip" data-dact="desel">選択を外す</button></div></div>`;
+      h += `<div class="dp-row"><span class="note">能力</span><button class="chip${gaugeStyle === 'needle' ? ' on' : ''}" data-dg="needle">針</button><button class="chip${gaugeStyle === 'bars' ? ' on' : ''}" data-dg="bars">棒</button></div>`;
+      if (ab) { h += '<div class="abil">' + ab.items.map((i) => `<button class="tile${abilOpen === i.id ? ' open' : ''}" data-da="${i.id}"><span class="ic">${ICONS[i.id] || '・'}</span>${gaugeSvg(i.value)}<small>${i.name}</small></button>`).join('') + '</div>'; const op = ab.items.find((i) => i.id === abilOpen); if (op) h += `<div class="abil-d"><b>${ICONS[op.id]} ${op.name}　${Math.round(op.value * 100)}%</b><span>${op.text}。${ab.note}</span></div>`; else h += '<div class="abil-d dim">能力をタップすると詳しい説明が出ます。</div>'; }
+      else h += '<div class="abil-d dim">この系統は現存しないため、能力は表示できません。</div>';
+    }
+    el.innerHTML = h;
+    el.querySelectorAll('[data-dm]').forEach((b) => { b.onclick = () => { dview.mode = b.dataset.dm; dpKey = ''; draw(true); }; });
+    el.querySelectorAll('[data-dl]').forEach((b) => { b.onclick = () => setSel(Number(b.dataset.dl)); });
+    el.querySelectorAll('[data-dg]').forEach((b) => { b.onclick = () => { gaugeStyle = b.dataset.dg; dpKey = ''; draw(true); }; });
+    el.querySelectorAll('[data-da]').forEach((b) => { b.onclick = () => { abilOpen = abilOpen === b.dataset.da ? null : b.dataset.da; dpKey = ''; draw(true); }; });
+    el.querySelectorAll('[data-dact]').forEach((b) => { b.onclick = () => { const a = b.dataset.dact; if (a === 'reset') { Object.assign(dview, { zoom: 1, px: 0, py: 0 }); } else if (a === 'legend') legendOpen = !legendOpen; else if (a === 'desel') { game.sel = null; abilOpen = null; } else if (a === 'tree' || a === 'codon') { const t = document.querySelector(`#tabs [data-tab=${a === 'tree' ? 'phylo' : 'codon'}]`); if (t) t.click(); } dpKey = ''; draw(true); }; });
+  }
+  // pan / pinch / tap on the dish
+  (function dishPointers() {
+    const ptr = new Map(); let tapStart = null, pinch = null;
+    const cssSize = () => { const r = cv.getBoundingClientRect(); return [r.width, r.height]; };
+    const local = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    cv.addEventListener('pointerdown', (e) => { if (!S4()) return; cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, local(e)); if (ptr.size === 1) tapStart = { ...local(e), t: performance.now(), moved: 0 }; else { tapStart = null; const [a, b] = [...ptr.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: dview.zoom }; } });
+    cv.addEventListener('pointermove', (e) => {
+      if (!S4() || !ptr.has(e.pointerId)) return; const prev = ptr.get(e.pointerId), cur = local(e); ptr.set(e.pointerId, cur); const [W, H2] = cssSize(), R0 = Math.min(W, H2) / 2 - 6;
+      if (ptr.size === 1) { dview.px += (cur.x - prev.x) / R0; dview.py += (cur.y - prev.y) / R0; if (tapStart) tapStart.moved += Math.hypot(cur.x - prev.x, cur.y - prev.y); }
+      else if (ptr.size === 2 && pinch) { const [a, b] = [...ptr.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y); dview.zoom = Math.max(1, Math.min(8, pinch.z * dd / Math.max(1, pinch.d))); }
+      const lim = dview.zoom; dview.px = Math.max(-lim, Math.min(lim, dview.px)); dview.py = Math.max(-lim, Math.min(lim, dview.py)); if (dview.zoom <= 1.001) { dview.px *= 0.9; dview.py *= 0.9; }
+      if (!playing || dview.zoom > 1) draw(false); else drawDish2();
+    });
+    const up = (e) => {
+      if (!S4()) return; const was = ptr.has(e.pointerId); ptr.delete(e.pointerId); if (ptr.size < 2) pinch = null;
+      if (was && tapStart && ptr.size === 0 && tapStart.moved < 8 && performance.now() - tapStart.t < 600) { const [W, H2] = cssSize(), d = dish2Now(); const h = d ? DV.hit(W, H2, d, dview, tapStart.x, tapStart.y) : null; setSel(h ? h.lin : null); }
+      if (ptr.size === 0) tapStart = null;
+    };
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('wheel', (e) => { if (!S4()) return; e.preventDefault(); dview.zoom = Math.max(1, Math.min(8, dview.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); draw(false); }, { passive: false });
+  })();
+  function updateMapCap() { const el = $('mapcap'); if (el) el.textContent = S4() ? 'タップで系統を選択／ピンチで拡大・ドラッグで移動／左＝陸 右＝水／半径＝圧力／上＝低温 下＝高温' : '円の大きさ＝環境支配力（個体数ではない）／点線＝参考の道筋'; }
   // ---- the achievement card ----
   const ACH_ICON = { codex: '◇', feat: '△', heritage: '⌬', omega: 'Ω' };
   let achSeen = 0, flashUntil = 0;
@@ -1169,12 +1230,12 @@
       <div class="note"><b>遺産と図鑑</b>：すべて実際の進化の記録です。能力を与えることはできません。遺産は、絶えた系統の遺伝子の断片が拾われることがあるというだけで、失敗や消失があります。</div>
       <div class="note"><b>仮定</b>：頻度・重み・基準値の多くはゲーム上の仮定で、科学的に実証したものではありません。詳細は設計記録にあります。</div>`;
   }
-  const dishRefresh = () => { drawDish(); };
+  const dishRefresh = () => { if (S4()) drawDish2(); };
 
   let lastTabT = -999, tkN = -1, stratKey = '', linKey = '', rsT = -999;
   function draw(force) {
     if (!game) return; const st = game.live.stats();
-    if (S31()) drawHud31(); else drawHud(); if (S4()) drawDish(); else if (game.cfg.realms) drawWorld2(st); else drawWorld(st);
+    if (S31()) drawHud31(); else drawHud(); if (S4()) drawDish2(); else if (game.cfg.realms) drawWorld2(st); else drawWorld(st);
     const lk = game.lineageReport().map((l) => (S31() ? (l.alive > 0 ? 1 : 0) : l.alive) + ':' + (game.rank.byLin[l.lin] && game.rank.byLin[l.lin].current ? game.rank.byLin[l.lin].current.rank : '')).join(',') + '|' + game.controlled; if (force || lk !== linKey) { linKey = lk; if (S31()) drawLinbar31(); else drawLinbar2(); }
     const th = ADAPT() ? game.threat() : null, sk = (ADAPT() ? game.strategies().join(',') + (th ? th.stance : '') : '') + '|' + game.controlled; if (force || sk !== stratKey) { stratKey = sk; if (S31()) drawStance31(); else drawStratbar(); }
     if (force || tkN !== game.events.length) { tkN = game.events.length; if (S4()) drawAch4(); else if (S31()) drawTicker31(); else drawTicker(); }
