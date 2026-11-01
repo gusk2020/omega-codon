@@ -32,7 +32,7 @@
     // pressure rings (log scale): 1e8, 1e7, 1e5(=1 atm, thick), 1e3, 1e2 Pa
     ctx.lineWidth = 1; ctx.font = '10px system-ui'; ctx.textAlign = 'left';
     for (const [P, lab] of [[1e8, '10⁸Pa'], [1e7, '10⁷'], [1e3, '10³']]) { const r = D2.radiusOfPressure(P) * g.k; ctx.strokeStyle = 'rgba(150,170,190,0.18)'; ctx.beginPath(); ctx.arc(g.cx, g.cy, r, 0, TAU); ctx.stroke(); if (vs.zoom >= 0.9) { ctx.fillStyle = 'rgba(170,185,200,0.55)'; ctx.fillText(lab, g.cx + 3, g.cy + r - 2); } }
-    ctx.fillStyle = 'rgba(170,185,200,0.6)'; ctx.fillText('中心＝高圧', g.cx + 3, g.cy + 12); ctx.fillText('外側＝低圧・真空', g.cx + 3, g.cy + g.k - 18);
+    ctx.fillStyle = 'rgba(170,185,200,0.6)'; ctx.fillText('中心＝高圧', g.cx + 3, g.cy + 12); ctx.textAlign = 'right'; ctx.fillText('外側＝低圧・真空', g.cx - 4, g.cy + g.k - 22); ctx.textAlign = 'left';
     ctx.strokeStyle = 'rgba(235,225,150,0.75)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(g.cx, g.cy, D2.R_ATM * g.k, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(235,225,150,0.9)'; ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.fillText('地表 1気圧', g.cx - D2.R_ATM * g.k * 0.72, g.cy + D2.R_ATM * g.k * 0.0 - 4); ctx.fillText('海面 1気圧', g.cx + D2.R_ATM * g.k * 0.72, g.cy - 4);
     ctx.strokeStyle = 'rgba(160,175,190,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(g.cx, g.cy - g.k); ctx.lineTo(g.cx, g.cy + g.k); ctx.stroke();

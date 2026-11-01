@@ -20,10 +20,13 @@ jobs:
       - name: Runtime files must not refer to private notes
         working-directory: stage5.0
         run: |
-          if grep -nE "DESIGN_LEDGER|COEXISTENCE_STUDY|ENGINE_SURVEY|STAGE2_0_DESIGN|STAGE3_0_DESIGN|STAGE4_0_DESIGN|STAGE4_1_AUDIT" index.html app.js game.js engine19.js style.css fmt.js history4.js dish.js codex4.js timemodel.js habitat.js earthhistory.js adaptation.js background.js rank.js civilization.js catastrophe.js world.js niche.js offworld.js; then echo "private reference found"; exit 1; fi
+          if grep -nE "DESIGN_LEDGER|COEXISTENCE_STUDY|ENGINE_SURVEY|STAGE2_0_DESIGN|STAGE3_0_DESIGN|STAGE4_0_DESIGN|STAGE4_1_AUDIT" index.html app.js game.js engine19.js style.css fmt.js history4.js dish.js dish2.js dishview.js phylotree.js codex4.js timemodel.js habitat.js earthhistory.js adaptation.js background.js rank.js civilization.js catastrophe.js world.js niche.js offworld.js; then echo "private reference found"; exit 1; fi
       - name: Stage 5.0 tests (time progression, rank, restore)
         working-directory: stage5.0
         run: node test50.js
+      - name: Stage 6 tests (circular dish, phylogeny layouts, links, save summaries)
+        working-directory: stage5.0
+        run: node test60.js
       - name: Audit tests (Stage 4.1)
         working-directory: stage5.0
         run: node test41.js

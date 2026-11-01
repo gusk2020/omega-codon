@@ -135,7 +135,7 @@
     const counts = creatures.map(() => 0); if (v2 && !resume) { const n = initialIdx.length, per = Math.floor(100 / n); initialIdx.forEach((li, k) => { counts[li] = per + (k < 100 - per * n ? 1 : 0); }); }
     const LIGHT = cfg.light === true, TIMING = LIGHT ? LIGHT_TIMING : LEGACY_TIMING;
     const TB = v2 && cfg.time === 'adaptive'; // Stage 2.0 time base (30 days per step, leaps, civilisation, abnormal cells)
-    const live = E.simulate({ seed: cfg.seed, steps: 1e9, continueWhenEmpty: v2, ...(TB ? { civ: true, abnormal: true, deathRecordCap: 20000 } : {}), ...(S3 ? { depth: { ...NICHE.engineArrays(0), box: NICHE.makeBox(E), bins: NICHE.BINS } } : {}), ...(S31 ? { v31: S4 ? { codon: true, o2: true, spread: true } : {} } : {}), environment: envDef.engine, resourceRegime: envDef.regime, ...(envDef.scale ? { resourceScale: envDef.scale } : {}), founders: 100, lineageCount: creatures.length,
+    const live = E.simulate({ seed: cfg.seed, steps: 1e9, continueWhenEmpty: v2, ...(TB ? { civ: true, abnormal: true, deathRecordCap: 20000 } : {}), ...(S3 ? { depth: { ...NICHE.engineArrays(0), box: NICHE.makeBox(E), bins: NICHE.BINS } } : {}), ...(S31 ? { v31: S4 ? { codon: true, o2: true, spread: true, ...(resume && resume.evoNextId ? { evNextId: resume.evoNextId } : {}) } : {} } : {}), environment: envDef.engine, resourceRegime: envDef.regime, ...(envDef.scale ? { resourceScale: envDef.scale } : {}), founders: 100, lineageCount: creatures.length,
       founderGenomes: creatures.map((c, i) => genomeOf(i)), sampleEvery: 100, live: true,
       ...(v2 ? { founderCounts: counts, niche: { slots: NICHE_SLOTS, weights: creatures.map((c) => c.niche), specialistBonus: NICHE_BONUS } } : {}),
       realms: realmsOn ? { startByLineage: creatures.map((c) => c.startRealm) } : null });
@@ -808,6 +808,14 @@
     const ABILITIES = [['tolerance', '耐性', '暑さ・寒さ・圧力・病気へのたえやすさ'], ['metabolism', '代謝', '活動の速さ。高いほど動けるが、燃料を多く使う'], ['repairRate', '修復', '傷や劣化を直す力'], ['dormancyDepth', '休眠', '飢えや危機を休眠でしのぐ深さ'], ['predation', '捕食', '獲物を捕る力'], ['movement', '移動', '場所を動く力'], ['immune', '免疫', '病気に強い度合い'], ['fecundity', '繁殖', '子を残す力']];
     game.abilities = (lin) => { const m = lineageTraitMeans()[lin]; if (!m) return null; const nr = normOf(m.mean); return { lin, name: creatures[lin].name, count: m.count, items: ABILITIES.map(([k, ja, text]) => ({ id: k, name: ja, text, value: nr[k] })), note: '個体の形質の平均を、それぞれの取りうる範囲で0〜1にしたものです（生きている個体のみ）。' }; };
     game.sel = null; // the lineage the player is looking at on the dish / tree / codon screens (an id from the creature roster; kept in milestone saves)
+    // A compact description of the world for the save screens (Stage 6): what a player needs to tell whether a loaded world is the same one.
+    game.summary2 = () => {
+      if (!S4 || !wm) return null; const st = live.stats(), wi = game.worldInfo(), rk = game.rank;
+      return { v: 1, seed: cfg.seed, t: live.t, years: wi.years, bpText: wi.bpText, elapsedText: wi.elapsedText, mode: cfg.heritage ? '特殊' : '通常',
+        alive: creatures.map((c, i) => (ever[i] ? { id: c.id, name: c.name, color: c.color, n: st.lineageAlive[i] } : null)).filter((x) => x && x.n > 0), extinct: creatures.filter((c, i) => ever[i] && st.lineageAlive[i] === 0).map((c) => c.id),
+        individuals: st.population, individualsKind: '計算中の個体の実数', rank: { current: rk.current ? rk.current.rank : null, best: rk.best ? rk.best.rank : null, lin: rk.best ? creatures[rk.best.lin].id : null },
+        codex: codexMap.size, feats: featMap.size, civ: wi.civ ? wi.civ.stage : null, mark: `乱数の種${cfg.seed}・${live.t}ステップ・図鑑${codexMap.size}件・偉業${featMap.size}件` };
+    };
     // ======== Stage 4.0: the collection, heritage, feats and the Omega verdict. Everything is READ from the simulation; none of it is fed back into it, except the heritage
     // relics (which the engine lets survivors pick up by chance) and the player's stances. A discovery never grants an ability. ========
     const nameUse = new Map(), codexMap = new Map(), featMap = new Map(); game.achievements = []; game.codexNew = []; game.featsNew = [];
@@ -883,16 +891,19 @@
     if (S4 && cfg.heritage && cfg.heritage.length) { const idx = (id) => Math.max(0, creatures.findIndex((c) => c.id === id)); live.addHeritage(cfg.heritage.map((it) => ({ ...it, from: idx(it.fromId), fromWorld: true }))); addEvent('codex', `🧬 前の世界の遺産${cfg.heritage.length}個が、この世界の水に漂っている（特殊モード）`); }
     // ======== Stage 4.0: the fan-shaped phylogeny. Built only from the engine's own records of mutation, reorganisation, fusion, separation, exchange and heritage; nothing is drawn that
     // was not recorded. Each node is an event that founded a clade (its descendants carry its tag); `par` is the clade it came out of. Time runs from the centre outwards. ========
+    let phyloBase = null; // Stage 6: the events recorded before the last milestone resume (the engine's own event list does not survive a resume)
     game.phylo = (limit = 160) => {
-      if (!S4) return null; const ev = live.evo(), st = live.stats(), keep = [], lost = creatures.map(() => 0);
+      if (!S4) return null; const ev = live.evo(), st = live.stats(), keep = [], lost = creatures.map((_, i) => (phyloBase ? phyloBase.lost[i] || 0 : 0));
       const rank = { established: 0, occurred: 1, lost: 2, faded: 2 };
       const tracked = ev.events.filter((e) => ['mutation', 'reorg', 'separation', 'fusion', 'exchange'].includes(e.kind) && (e.kind !== 'mutation' || e.sub === 'newcap' || Math.abs(e.delta) >= 0.15) && (e.kind !== 'exchange' || e.sub !== 'intra'));
       const sorted = tracked.slice().sort((a, b) => rank[a.status] - rank[b.status] || b.t - a.t);
       for (const e of sorted) { if (keep.length < limit && rank[e.status] < 2) keep.push(e); else lost[e.lin]++; }
-      const ids = new Set(keep.map((e) => e.id)), nodes = keep.map((e) => ({ id: e.id, parent: e.par && ids.has(e.par) ? e.par : null, lin: e.lin, y: evoY.has(e.id) ? evoY.get(e.id) : 0, t: e.t, kind: e.kind, sub: e.sub, status: e.status, carriers: e.carriers, from: e.from === undefined ? null : e.from, label: evoText(e.kind === 'reorg' ? { ...e, kind: 'mutation', sub: 'alter' } : e, e.status) }));
+      const ids = new Set(keep.map((e) => e.id)); if (phyloBase) for (const n of phyloBase.nodes) ids.add(n.id);
+      const fresh = keep.map((e) => ({ id: e.id, parent: e.par && ids.has(e.par) ? e.par : null, lin: e.lin, y: evoY.has(e.id) ? evoY.get(e.id) : 0, t: e.t, kind: e.kind, sub: e.sub, status: e.status, carriers: e.carriers, trait: e.trait || null, from: e.from === undefined ? null : e.from, label: evoText(e.kind === 'reorg' ? { ...e, kind: 'mutation', sub: 'alter' } : e, e.status) }));
+      const nodes = phyloBase ? phyloBase.nodes.map((n) => ({ ...n })).concat(fresh) : fresh;
       const links = []; for (const nd of nodes) { if (nd.kind === 'fusion' && nd.from !== null) links.push({ type: 'fusion', fromLin: nd.from, to: nd.id, y: nd.y }); else if (nd.kind === 'exchange' && nd.from !== null) links.push({ type: nd.sub.startsWith('heritage') ? 'heritage' : 'exchange', fromLin: nd.from, to: nd.id, y: nd.y }); }
-      const roots = creatures.map((c, i) => ({ lin: i, name: c.name, color: c.color, alive: st.lineageAlive[i], ends: lineageEnds[i].slice(), lostClades: lost[i] }));
-      return { nodes, links, roots, focus: controlled, years: yearsNow(), scale: wm ? wm.presentYears + 1e9 : 1, tracked: tracked.length, shown: nodes.length, note: '記録されたイベントだけで描いています。古くて消えた枝は数だけを示します。' };
+      const roots = creatures.map((c, i) => ({ lin: i, id: c.id, name: c.name, color: c.color, alive: st.lineageAlive[i], ends: lineageEnds[i].slice(), lostClades: lost[i] }));
+      return { nodes, links, roots, focus: controlled, years: yearsNow(), scale: wm ? wm.presentYears + 1e9 : 1, tracked: tracked.length + (phyloBase ? phyloBase.nodes.length : 0), shown: nodes.length, resumed: !!phyloBase, note: '記録されたイベントだけで描いています。古くて消えた枝は数だけを示します。' + (phyloBase ? '節目セーブの前の記録は、保存した時点の状態で表示します（その後の変化は反映されません）。' : '') };
     };
     Object.defineProperty(game, 'approxLeft', { get: () => (approx ? approx.left : 0) }); // steps of approximate evolution still to run (they are spread over later frames)
     Object.defineProperty(game, 'eventSeq', { get: () => eventSeq });
@@ -962,7 +973,7 @@
       if (!S4 || !TB || approx) return null;
       const tbKeep = {}; for (const k of ['lastLeapT', 'leapYears', 'skipGens', 'leaps', 'takenTotal', 'harmTotal', 'episodes', 'gapNote', 'attackTotal', 'attackFrac', 'blocked', 'approxSteps', 'approxLeaps', 'lastStance', 'ended']) tbKeep[k] = tb[k];
       return plain({ v: 10, kind: 'milestone', cfg: game.cfg, t: live.t, autoContinuous: game.autoContinuous, wm, off, bg, tb: tbKeep, ever, extinctAt, recordAge, streak, firstSeen, strategies, controlled,
-        peakLin, peakRealm, everRealm, founderMean, sites: siteBook, sel: game.sel, clock, eventSeq, events: game.events.slice(-120), achievements: game.achievements, codex: [...codexMap], feats: [...featMap], nameUse: [...nameUse], formSeen: [...formSeen],
+        peakLin, peakRealm, everRealm, founderMean, sites: siteBook, sel: game.sel, summary: game.summary2(), lineageEnds, evoNextId: (live.evo() ? live.evo().total + 1 : 1), evoBase: (() => { const p = game.phylo(1e9); return p ? { nodes: p.nodes, lost: p.roots.map((r) => r.lostClades) } : null; })(), clock, eventSeq, events: game.events.slice(-120), achievements: game.achievements, codex: [...codexMap], feats: [...featMap], nameUse: [...nameUse], formSeen: [...formSeen],
         soloSteps, extSteps, omegaHeld, omega: game.omega, rank: { best: game.rank.best, history: game.rank.history, byLin: game.rank.byLin, current: game.rank.current },
         arena: live.exportArena(6) });
     };
@@ -971,7 +982,7 @@
       mergeInto(wm, resume.wm); for (const [k, ex] of [['off', off], ['bg', bg]]) if (ex && resume[k]) mergeInto(ex, resume[k]);
       mergeInto(tb, resume.tb); tb.wc = creatures.map(() => []);
       resume.ever.forEach((v, i) => { ever[i] = v; }); resume.extinctAt.forEach((v, i) => { extinctAt[i] = v; }); resume.recordAge.forEach((v, i) => { recordAge[i] = v; }); resume.streak.forEach((v, i) => { streak[i] = v; }); resume.firstSeen.forEach((v, i) => { firstSeen[i] = v; });
-      resume.peakLin.forEach((v, i) => { peakLin[i] = v; }); resume.peakRealm.forEach((v, i) => { peakRealm[i] = v; }); resume.everRealm.forEach((v, i) => { everRealm[i] = v; }); (resume.founderMean || []).forEach((v, i) => { founderMean[i] = v; }); if (typeof resume.sel === 'string') game.sel = resume.sel; if (siteBook && resume.sites && Array.isArray(resume.sites.lin)) resume.sites.lin.forEach((v, i) => { if (siteBook.lin[i]) siteBook.lin[i] = v; });
+      resume.peakLin.forEach((v, i) => { peakLin[i] = v; }); resume.peakRealm.forEach((v, i) => { peakRealm[i] = v; }); resume.everRealm.forEach((v, i) => { everRealm[i] = v; }); (resume.founderMean || []).forEach((v, i) => { founderMean[i] = v; }); if (typeof resume.sel === 'string') game.sel = resume.sel; if (Array.isArray(resume.lineageEnds)) resume.lineageEnds.forEach((v, i) => { if (lineageEnds[i]) lineageEnds[i] = v; }); if (resume.evoBase && Array.isArray(resume.evoBase.nodes)) phyloBase = resume.evoBase; if (siteBook && resume.sites && Array.isArray(resume.sites.lin)) resume.sites.lin.forEach((v, i) => { if (siteBook.lin[i]) siteBook.lin[i] = v; });
       resume.strategies.forEach((v, i) => { strategies[i] = v; if (STRATEGIES[v]) live.setStance(i, STRATEGIES[v].code); }); controlled = resume.controlled;
       Object.assign(clock, resume.clock); eventSeq = resume.eventSeq; for (const e of resume.events) game.events.push(e);
       game.achievements = resume.achievements; for (const [k, v] of resume.codex) codexMap.set(k, v); for (const [k, v] of resume.feats) featMap.set(k, v); for (const [k, v] of resume.nameUse) nameUse.set(k, v); for (const [k, v] of resume.formSeen) formSeen.set(k, v);
@@ -997,6 +1008,18 @@
     let last = 0; for (const e of save.log) { if (!e || typeof e !== 'object' || typeof e.t !== 'number' || typeof e.kind !== 'string') bad('記録の項目'); if (e.t < last) bad('記録の順序'); last = e.t; }
     return save;
   }
+  // What a restored world shares with the save it came from. Years, lineages, ranks and records come back exactly; the individuals are re-created from their genomes, so their number is only close.
+  function compareSummaries(a, b) {
+    if (!a || !b) return [];
+    const ids = (s) => s.alive.map((x) => x.id).join(','), same = (x, y) => x === y, rows = [];
+    rows.push({ key: 'years', label: '世界の年代', saved: a.bpText, now: b.bpText, ok: same(a.years, b.years) });
+    rows.push({ key: 'alive', label: '生き残っている系統', saved: a.alive.map((x) => x.name).join('・') || 'なし', now: b.alive.map((x) => x.name).join('・') || 'なし', ok: same(ids(a), ids(b)) });
+    rows.push({ key: 'rank', label: 'ランク（現在／最高）', saved: `${a.rank.current || '—'}／${a.rank.best || '—'}`, now: `${b.rank.current || '—'}／${b.rank.best || '—'}`, ok: same(a.rank.best, b.rank.best) });
+    rows.push({ key: 'codex', label: '図鑑・偉業', saved: `${a.codex}・${a.feats}`, now: `${b.codex}・${b.feats}`, ok: same(a.codex, b.codex) && same(a.feats, b.feats) });
+    const close = Math.abs(a.individuals - b.individuals) <= Math.max(5, 0.15 * a.individuals);
+    rows.push({ key: 'individuals', label: '個体数（近似で再開）', saved: String(a.individuals), now: String(b.individuals), ok: close, approx: true });
+    return rows;
+  }
   function loadGame(E, save) { validateSave(save); if (save.kind === 'milestone') return createGame(E, save.cfg, null, save); return createGame(E, save.cfg, save); }
-  return { validateSave, HIST, CREATURES, CREATURES7, CELLS8, ENVIRONMENTS, OPTIONS, KEY_TRAITS, TRAIT_JA, MAX_LINEAGES, STRATEGIES, pickRivals, makeGenome, newGame, loadGame, leapBlocker, DETECT_EVERY, LEAP_FROM, jaYears: WORLD.jaYears };
+  return { validateSave, HIST, CREATURES, CREATURES7, CELLS8, ENVIRONMENTS, OPTIONS, KEY_TRAITS, TRAIT_JA, MAX_LINEAGES, STRATEGIES, pickRivals, makeGenome, newGame, loadGame, compareSummaries, leapBlocker, DETECT_EVERY, LEAP_FROM, jaYears: WORLD.jaYears };
 });

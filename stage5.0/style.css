@@ -213,3 +213,14 @@ body.s4 #world{touch-action:none}
 .tile{display:flex;flex-direction:column;align-items:center;gap:0;background:#0f1823;border:1px solid #243445;border-radius:10px;padding:5px 2px 4px;color:var(--fg,#dfe8f1);font:inherit;min-height:64px}
 .tile .ic{font-size:18px;line-height:1.1}.tile small{font-size:11px;color:var(--dim)}.tile.open{border-color:#6fd3a0}
 .abil-d{font-size:12px;background:#0f1823;border-radius:8px;padding:6px 8px;margin:4px 0;display:flex;flex-direction:column;gap:2px}.abil-d.dim{color:var(--dim)}
+
+.evl{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.evb{display:flex;gap:8px;align-items:center;text-align:left;background:#0f1823;border:1px solid #243445;border-radius:8px;padding:6px 8px;color:var(--fg,#dfe8f1);font:inherit;font-size:12px}
+.evb span{font-size:16px;min-width:18px;text-align:center}.evb b{flex:1;font-weight:400}.evb small{color:var(--dim)}.evb.on{border-color:#fff}
+
+/* Stage 6: save summaries */
+.sv{background:#0f1823;border:1px solid #243445;border-radius:10px;padding:8px;margin:4px 0;font-size:12px}.sv.dim{color:var(--dim)}
+.sv-h{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.sv-h b{font-size:15px}.sv-h small{color:var(--dim)}
+.sv-l{display:flex;flex-wrap:wrap;gap:4px 10px;margin:4px 0}.sv-l span{display:inline-flex;align-items:center;gap:4px}.sv-l i{width:9px;height:9px;border-radius:50%;background:var(--c,#888);display:inline-block}.sv-l .dim{color:var(--dim)}
+.sv-m{display:flex;flex-wrap:wrap;gap:2px 12px}.sv-m small{color:var(--dim)}.sv-k{color:var(--dim);margin-top:4px;font-size:11px}
+.slot-b{flex:1;min-width:0}.cmp{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}.cmp td{padding:3px 4px;border-bottom:1px solid #1d2a38}.cmp tr.ok td:last-child{color:#6fd3a0}.cmp tr.ng td:last-child{color:#e5586e}
