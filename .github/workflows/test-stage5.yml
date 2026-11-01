@@ -1,0 +1,47 @@
+name: Stage 5.0 tests
+on:
+  push:
+    branches: [dev/stage5.0]
+    paths: ['stage5.0/**', '.github/workflows/test-stage5.yml']
+  pull_request:
+    paths: ['stage5.0/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Runtime files must not refer to private notes
+        working-directory: stage5.0
+        run: |
+          if grep -nE "DESIGN_LEDGER|COEXISTENCE_STUDY|ENGINE_SURVEY|STAGE2_0_DESIGN|STAGE3_0_DESIGN|STAGE4_0_DESIGN|STAGE4_1_AUDIT" index.html app.js game.js engine19.js style.css fmt.js history4.js dish.js dish2.js dishview.js phylotree.js codex4.js timemodel.js habitat.js earthhistory.js adaptation.js background.js rank.js civilization.js catastrophe.js world.js niche.js offworld.js; then echo "private reference found"; exit 1; fi
+      - name: Stage 5.0 tests (time progression, rank, restore)
+        working-directory: stage5.0
+        run: node test50.js
+      - name: Stage 6 tests (circular dish, phylogeny layouts, links, save summaries)
+        working-directory: stage5.0
+        run: node test60.js
+      - name: Audit tests (Stage 4.1)
+        working-directory: stage5.0
+        run: node test41.js
+      - name: Stage 4.0 parts, against this code
+        working-directory: stage5.0
+        run: node test40.js
+      - name: Stage 3.1 parts, against this code
+        working-directory: stage5.0
+        run: node test31.js
+      - name: Stage 3.0 parts, against this code
+        working-directory: stage5.0
+        run: node test30.js
+      - name: Stage 2.0 parts, against this code
+        working-directory: stage5.0
+        run: node test20b.js
+      - name: Stage 1.9D suite, against this code
+        working-directory: stage5.0
+        run: node test20.js
