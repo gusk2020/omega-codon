@@ -3,15 +3,12 @@
 // TEST-ONLY SHORTCUT: `testStartYears` (begin 290 Myr after the present). Speeds are modelled as the number of steps per call to advance()
 // (the app asks for 10..6000 steps per second; the engine itself has no speed setting).
 const assert = require('node:assert/strict');
-const E = require('./engine19'), G = require('./game'), R = require('./rank');
-const results = [];
-function test(name, fn) { const t = Date.now(); console.log('… ' + name.slice(0, 70)); try { fn(); results.push([name, 'PASS']); console.log('PASS ' + name + ` (${Date.now() - t} ms)`); } catch (e) { results.push([name, 'FAIL']); console.log('FAIL ' + name + '\n' + (e.stack || e).toString().slice(0, 800)); } }
+const { E, G, runner, cont, runTo } = require('./testlib'), R = require('./rank');
+const { test, finish } = runner();
 const mk = (seed, o = {}) => { const g = G.newGame(E, { creatures: o.creatures || [], rivals: [], seed, realms: true, scenario: 'free', ecology: 'v2', time: 'adaptive', stage: 4, ...(o.start === false ? {} : { testStartYears: 3.8e9 + 2.9e8 }) }); g.setAutoContinuous(true); return g; };
-const cont = (g) => { if (g.checkpoint) g.continueFromCheckpoint(); };
 const Myr = (g) => (g.worldInfo().years - 3.8e9 - 2.9e8) / 1e6;
 const restore = (g) => { const sv = JSON.parse(JSON.stringify(g.save())), b = G.loadGame(E, sv); let n = 0; while (b.replayTo !== null && n++ < 6000) { b.advance(200); cont(b); } return b; };
 
-const runTo = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 4000) { g.advance(250); cont(g); } };
 const view = (g) => { const st = g.live.stats(); return { t: g.t, years: g.worldInfo().years, alive: st.lineageAlive.map((n) => (n > 0 ? 1 : 0)).join(''), best: g.rank.best && g.rank.best.rank, codex: g.codex().map((e) => e.id).sort().join(','), feats: g.feats().map((e) => e.id).sort().join(','), ach: g.achievements.length, seq: g.eventSeq }; };
 let shared = null;
 test('1A：+309 Myrを越えても世界の時間が進み続ける（速度切替・停止/再開つき）', () => {
@@ -113,4 +110,4 @@ test('5.2 セーブ復元後の世界時間：読込直後は保存時と同じ�
     gainA.forEach((a, k) => assert.ok(Math.abs(a - gainB[k]) <= Math.max(0.01 * a, 2e4), `seed ${seed} after ${(k + 1) * 25} chunks: unsaved +${a} vs loaded +${gainB[k]}`));
   }
 });
-const bad = results.filter((r) => r[1] === 'FAIL'); console.log(`\n${results.length - bad.length}/${results.length} passed`); process.exit(bad.length ? 1 : 0);
+finish();

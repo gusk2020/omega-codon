@@ -1,13 +1,8 @@
 'use strict';
 // Stage 6 tests: circular dish, three-layout phylogeny, codon links, save summaries. TEST-ONLY SHORTCUT: none (games start at the origin of life).
 const assert = require('node:assert/strict');
-const E = require('./engine19'), G = require('./game'), D2 = require('./dish2'), DV = require('./dishview'), PT = require('./phylotree');
-const results = [];
-function test(name, fn) { const t = Date.now(); console.log('… ' + name.slice(0, 70)); try { fn(); results.push([name, 'PASS']); console.log('PASS ' + name + ` (${Date.now() - t} ms)`); } catch (e) { results.push([name, 'FAIL']); console.log('FAIL ' + name + '\n' + (e.stack || e).toString().slice(0, 900)); } }
-const mk = (seed) => { const g = G.newGame(E, { creatures: ['standard'], rivals: [], seed, realms: true, scenario: 'free', ecology: 'v2', time: 'adaptive', stage: 4 }); g.setAutoContinuous(true); return g; };
-const snapOf = (g) => { for (let i = 0; i < 400; i++) { const m = g.milestone(); if (m) return JSON.parse(JSON.stringify(m)); g.advance(5); cont(g); } throw new Error('no milestone could be taken'); };
-const cont = (g) => { if (g.checkpoint) g.continueFromCheckpoint(); };
-const runTo = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 4000) { g.advance(250); cont(g); } };
+const { E, G, runner, newPlayGame: mk, cont, runTo, snapOf } = require('./testlib'), D2 = require('./dish2'), DV = require('./dishview'), PT = require('./phylotree');
+const { test, finish } = runner();
 let shared = null;
 test('6 円盤の座標：左＝陸・右＝水、半径＝圧力（中心が高圧）、1気圧の線、上＝低温・下＝高温', () => {
   assert.ok(D2.radiusOfPressure(3e8) < 0.01 && D2.radiusOfPressure(100) > 0.99, 'centre = high pressure, rim = near vacuum');
@@ -79,4 +74,4 @@ test('6 セーブは節目だけ：アプリは定期保存・自由保存を持
   const src = require('node:fs').readFileSync(__dirname + '/app.js', 'utf8'); assert.ok(!/putSave\('auto'\)(?![^]{0,0})/.test(src.replace(/const autoSaved = putSave\('auto'\)/, '')), 'only the milestone screen auto-saves'); assert.ok(src.includes('この保存を読み込みますか？') && src.includes('compareSummaries') && src.includes('RESTORE_NOTE'));
   assert.ok(src.includes('if (!game || !game.checkpoint) return false;'));
 });
-const bad = results.filter((r) => r[1] === 'FAIL'); console.log(`\n${results.length - bad.length}/${results.length} passed`); process.exit(bad.length ? 1 : 0);
+finish();
