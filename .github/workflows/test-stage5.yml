@@ -1,7 +1,7 @@
 name: Stage 5.0 tests
 on:
   push:
-    branches: [dev/stage5.0]
+    branches: [dev/stage5.0, dev/stage6.1]
     paths: ['stage5.0/**', '.github/workflows/test-stage5.yml']
   pull_request:
     paths: ['stage5.0/**']
