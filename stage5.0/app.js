@@ -92,7 +92,7 @@
   // ---------- play ----------
   function begin(g) {
     game = g; document.body.classList.toggle('s31', g.cfg.stage >= 3.1); document.body.classList.toggle('s4', g.cfg.stage === 4); if ($('dishpanel')) { $('dishpanel').hidden = g.cfg.stage !== 4; dpKey = ''; } if (g.cfg.stage >= 3.1) $('skip').textContent = '⏭ 次の出来事';
-    if (g.cfg.stage === 4) { $('tabs').innerHTML = '<button data-tab="codex" class="on">図鑑</button><button data-tab="phylo">系統樹</button><button data-tab="codon">コドン</button><button data-tab="feats">偉業</button><button data-tab="log">年表</button><button data-tab="detail">詳細</button>'; tab = 'codex'; runId = Date.now(); const m = Meta.load()[g.cfg.heritage ? 'special' : 'normal'] || Meta.blank(); metaKnown = new Set(Object.keys(m.codex)); achSeen = 0; secSmooth = null; metaT = -1; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) $('tab-' + id).hidden = id !== 'codex'; } else { $('tabs').innerHTML = TABS_ORIG; tab = 'world'; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) { const e = $('tab-' + id); if (e) e.hidden = id !== 'world'; } $('detailnav').hidden = true; }
+    if (g.cfg.stage === 4) { $('tabs').innerHTML = '<button data-tab="codex" class="on">図鑑</button><button data-tab="phylo">系統樹</button><button data-tab="codon">コドン</button><button data-tab="feats">偉業</button><button data-tab="log">年表</button><button data-tab="detail">詳細</button>'; tab = 'codex'; runId = Date.now(); const m = Meta.load()[g.cfg.heritage ? 'special' : 'normal'] || Meta.blank(); metaKnown = new Set(Object.keys(m.codex)); achSeen = 0; metaT = -1; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) $('tab-' + id).hidden = id !== 'codex'; } else { $('tabs').innerHTML = TABS_ORIG; tab = 'world'; for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) { const e = $('tab-' + id); if (e) e.hidden = id !== 'world'; } $('detailnav').hidden = true; }
     updateMapCap(); startTraits = g.series[0] ? g.series[0].traits.slice() : null; playing = true; lastAuto = g.t;
     $('start').hidden = true; $('play').hidden = false; $('modal').hidden = true;
     buildSpeeds(); measured = { rate: 0, t: performance.now(), steps: g.t };
@@ -227,9 +227,6 @@
       bx.fillStyle = '#7f93a8'; bx.textAlign = 'right'; bx.fillText(g.inArena ? `アリーナに${g.inArena}体` : g.extinct ? '' : `移入${g.immigrantsTotal}`, W - 6, y + 4);
     }); bx.textAlign = 'left';
   }
-  function drawLinbar() {
-    const rep = game.lineageReport(); $('linbar').innerHTML = rep.filter((l) => l.alive > 0 || l.role === 'focus').map((l) => { const c = l.change100; return `<span><i style="color:${l.color}">${l.role === 'focus' ? '●' : '■'}</i> ${l.name}${l.role === 'rival' ? '（相手）' : l.role === 'immigrant' ? '（移入）' : ''} <b>${l.alive}</b>${c === null ? '' : `<span class="${c > 0 ? 'up' : c < 0 ? 'dn' : ''}"> ${c > 0 ? '▲' : c < 0 ? '▼' : '＝'}${Math.abs(c)}</span>`}</span>`; }).join('');
-  }
   function kv(rows) { return '<div class="kv">' + rows.map(([a, b, w]) => (w ? `<span class="w"><small>${a}</small><br>${b}</span>` : `<span>${a}</span><span>${b}</span>`)).join('') + '</div>'; }
   function linRows(list) {
     return list.map((l) => `<div class="lin"><div><i style="color:${l.color}">${game.roleOf(l.lin) === 'rival' ? '■' : '●'}</i> ${l.name}<small>${l.extinct ? (l.extinctAt !== null ? l.extinctAt + 'ステップで絶えた' : '絶えた') : '生存中'}・生存個体の累計捕獲 ${l.catchesOfLiving}</small></div><div class="num">${l.alive} 体<small class="${l.change100 > 0 ? 'up' : l.change100 < 0 ? 'dn' : ''}">${l.change100 === null ? '増減：計測中' : '直近約100ステップ ' + (l.change100 > 0 ? '+' : '') + l.change100}</small></div></div>`).join('');
@@ -309,12 +306,6 @@
     wrapVisual('log', logVisual(), game.events.slice().reverse().slice(0, 150).map((e) => `<div class="ev ${e.kind}"><small>${e.y !== undefined ? fmtY(e.y) + '後／' : ''}${e.t}ステップ／約${e.gen}世代</small>${evIcon(e)} ${e.text}</div>`).join('') || '<p class="note">まだ出来事はありません。</p>', 'すべての出来事');
   }
   // The headline time is the elapsed time under an ASSUMED step length (uncalibrated), the era, and the cumulative generations. Steps are small print.
-  function drawTimeline(ti) {
-    const hi = game.historyInfo(), unit = hi ? 'day' : assume, a = TM.find(unit);
-    const era = hi ? `年代：<b>${HS.formatYearsBP(HS.KPG_AGE_YEARS_BP)}</b>（K–Pg境界）＋ 約${hi.yearsSinceImpact.toFixed(1)}年` : `年代：自由開始（地球史とは対応させていません）`;
-    $('timeline').innerHTML = `${era}　<small>内部 ${ti.steps.toLocaleString('ja-JP')}ステップ／${a.name}（仮定・未校正）</small><br><small>参考：世代×その時点の平均寿命 ≈ ${NUM(ti.lifespanReferenceSteps)}ステップ分 ≈ ${TM.format(ti.lifespanReferenceSteps, unit)}　<a href="#" id="why-time" style="color:var(--accent)">これは何？</a></small>`;
-    const w = $('why-time'); if (w) w.onclick = (e) => { e.preventDefault(); openTimeInfo(); };
-  }
   function openTimeInfo() {
     if (ADAPT()) { const card = $('modal-card'), p = playing; playing = false; setPP(); card.className = 'card'; card.innerHTML = `<h3>時間のしくみ</h3>${timeExplainHtml(game.worldInfo())}`; const b = document.createElement('button'); b.className = 'btn primary big'; b.textContent = '閉じる'; b.onclick = () => { $('modal').hidden = true; if (p && !game.pending && !game.checkpoint && !game.isOver) { playing = true; setPP(); } }; card.appendChild(b); $('modal').hidden = false; return; }
     const ti = game.timeInfo(), card = $('modal-card'), p = playing; playing = false; setPP();
@@ -517,10 +508,6 @@
 
   // ---------- rank (α → Ω), individuals, checkpoints, fast-forward to the next event ----------
   const RANK_NOTE = 'ランクは、能力の合計や知能の高さではなく、個体が自力で長く生き続ける力から判定する<b>暫定の判定</b>です。判定できる範囲だけを使い、未実装の能力は採点していません。';
-  function drawRankbar() {
-    const rk = game.rank, cur = rk.current, best = rk.best;
-    $('rankbar').innerHTML = `<span class="rk">${cur ? cur.rank : '？'}</span><span>ランク（現在・暫定）　<small>過去最高 <b>${best ? best.rank : '—'}</b>${cur ? '' : '／判定中または個体が少なすぎます'}　Ω：判定未実装</small></span>`;
-  }
   function tierBar(t) { return '<div class="tierbar">' + [1, 2, 3, 4].map((k) => `<i class="${t !== null && t >= k ? 'on' : ''}"></i>`).join('') + '</div>'; }
   function fmtVal(a) { if (a.value === null) return a.why || '判定できません'; return a.id === 'efficiency' ? a.value.toFixed(3) : a.id === 'range' ? `${a.value}領域` : a.id === 'competition' ? `${NUM(a.value)}ステップ` : a.value.toFixed(a.id === 'repair' ? 3 : 2); }
   function drawRankTab() {
@@ -1028,52 +1015,6 @@
     if (modeOf() === 'normal' || true) { const h = game.exportHeritage(); if (h.length) m.heritage = h; } // the relics of the latest world, offered to the special mode
     Meta.store(m);
   }
-  // ---- the dish ----
-  const dishOff = document.createElement('canvas'); dishOff.width = dishOff.height = 168; const dctx = dishOff.getContext('2d'); let dishImg = null;
-  const hex = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
-  let dishC = { k: -1, g: null, v: null }, secSmooth = null, dishPainted = null;
-  const NOISE = new Float32Array(168 * 168); for (let y = 0; y < 168; y++) for (let x = 0; x < 168; x++) NOISE[y * 168 + x] = hash(x, y) - 0.5; // the edge jitter, computed once
-  const dishNow = () => { const k = Math.floor(game.t / 25); if (dishC.k !== k || dishC.g !== game) dishC = { k, g: game, v: game.dish() }; return dishC.v; };
-  function picto(c, kind, x, y, s, col) {
-    c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1.4; c.lineCap = 'round'; c.lineJoin = 'round'; c.translate(x, y);
-    if (kind === 'water') { for (let k = 0; k < 2; k++) { c.beginPath(); c.moveTo(-s, -s * 0.2 + k * s * 0.7); c.quadraticCurveTo(-s * 0.5, -s * 0.8 + k * s * 0.7, 0, -s * 0.2 + k * s * 0.7); c.quadraticCurveTo(s * 0.5, s * 0.4 + k * s * 0.7, s, -s * 0.2 + k * s * 0.7); c.stroke(); } }
-    else if (kind === 'underground') { for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(-s, -s * 0.7 + k * s * 0.7); c.lineTo(s, -s * 0.7 + k * s * 0.7); c.stroke(); } c.beginPath(); c.moveTo(0, -s); c.lineTo(0, s * 0.9); c.stroke(); }
-    else if (kind === 'air') { c.beginPath(); c.arc(-s * 0.4, 0, s * 0.45, Math.PI * 0.5, Math.PI * 1.5); c.arc(0, -s * 0.25, s * 0.55, Math.PI, 0); c.arc(s * 0.45, 0, s * 0.45, Math.PI * 1.5, Math.PI * 0.5); c.closePath(); c.stroke(); }
-    else { c.beginPath(); c.moveTo(-s, s * 0.7); c.lineTo(-s * 0.2, -s * 0.8); c.lineTo(s * 0.3, s * 0.1); c.lineTo(s * 0.6, -s * 0.3); c.lineTo(s, s * 0.7); c.closePath(); c.stroke(); }
-    c.restore();
-  }
-  const KIND_PIC = { water: 'water', underground: 'underground', air: 'air', land: 'land' };
-  function drawDish() {
-    const [W, H2] = fit(cv, cx); cx.clearRect(0, 0, W, H2); const d = dishNow(); if (!d) return;
-    const cxp = W / 2, cyp = H2 / 2, R0 = Math.min(W, H2) / 2 - 8;
-    // sector widths are smoothed so that the layout drifts instead of jumping
-    const target = d.sectors.map((s) => s.a0); if (!secSmooth || secSmooth.g !== game) secSmooth = { g: game, a: target.slice() }; for (let k = 0; k < 4; k++) secSmooth.a[k] += (target[k] - secSmooth.a[k]) * 0.25;
-    // the territories, painted pixel by pixel on a small canvas and scaled up (soft, colony-like edges)
-    const N = dishOff.width, A = d.A, R = d.R;
-    if (dishPainted !== d) { // the picture changes only when the dish is recomputed (every 25 steps); in between the painted image is simply drawn again
-    const id = dctx.createImageData(N, N), px = id.data, cols = d.colors.map(hex), foc = d.focus;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      const dx = (x + 0.5 - N / 2) / (N / 2), dy = (y + 0.5 - N / 2) / (N / 2), r = Math.sqrt(dx * dx + dy * dy), o = (y * N + x) * 4;
-      if (r > 1) { px[o + 3] = 0; continue; }
-      const noise = NOISE[y * N + x] * 0.9, f = ((Math.atan2(dx, -dy) / (2 * Math.PI)) + 1) % 1, ai = Math.max(0, Math.min(A - 1, Math.floor(f * A + noise))), ri = Math.max(0, Math.min(R - 1, Math.round(r * (R - 1) + noise))), k = ri * A + ai, ow = d.owner[k];
-      if (ow < 0) { px[o] = 14; px[o + 1] = 20; px[o + 2] = 28; px[o + 3] = 255; continue; }
-      const s = d.strength[k], c1 = cols[ow], sc = d.second[k]; let cr = c1[0], cg = c1[1], cb = c1[2];
-      if (sc >= 0) { const c2 = cols[sc]; cr = (cr + c2[0]) / 2; cg = (cg + c2[1]) / 2; cb = (cb + c2[2]) / 2; }
-      const a = 0.30 + 0.7 * Math.min(1, s); px[o] = 14 + (cr - 14) * a; px[o + 1] = 20 + (cg - 20) * a; px[o + 2] = 28 + (cb - 28) * a; px[o + 3] = 255;
-      if (ow === foc) { // the lineage in focus: a pale outline where its territory meets another
-        const k2 = [ri * A + ((ai + 1) % A), ri * A + ((ai + A - 1) % A), Math.min(R - 1, ri + 1) * A + ai, Math.max(0, ri - 1) * A + ai]; if (k2.some((q) => d.owner[q] !== foc)) { px[o] = 235; px[o + 1] = 240; px[o + 2] = 245; }
-      }
-    }
-    dctx.putImageData(id, 0, 0); dishPainted = d; }
-    cx.save(); cx.beginPath(); cx.arc(cxp, cyp, R0, 0, 6.2832); cx.clip(); cx.imageSmoothingEnabled = true; cx.drawImage(dishOff, cxp - R0, cyp - R0, R0 * 2, R0 * 2); cx.restore();
-    cx.strokeStyle = '#2c3f55'; cx.lineWidth = 2; cx.beginPath(); cx.arc(cxp, cyp, R0, 0, 6.2832); cx.stroke();
-    // the civilisation sector (land): its own radial meaning, centre = bound to the environment, outside = changing it
-    const land = d.sectors.find((s) => s.id === 'land');
-    if (d.civ) { cx.save(); cx.beginPath(); cx.arc(cxp, cyp, R0 * d.civ.r1, (land.a0 - 0.25) * 2 * Math.PI, (land.a1 - 0.25) * 2 * Math.PI); cx.arc(cxp, cyp, R0 * d.civ.r0, (land.a1 - 0.25) * 2 * Math.PI, (land.a0 - 0.25) * 2 * Math.PI, true); cx.closePath(); cx.fillStyle = 'rgba(200,205,210,0.22)'; cx.fill(); cx.strokeStyle = 'rgba(220,225,230,0.7)'; cx.setLineDash([3, 3]); cx.stroke(); cx.restore(); }
-    // sector boundaries and pictograms
-    d.sectors.forEach((s) => { const a = (s.a0 - 0.25) * 2 * Math.PI; cx.strokeStyle = 'rgba(160,175,190,0.35)'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(cxp, cyp); cx.lineTo(cxp + Math.cos(a) * R0, cyp + Math.sin(a) * R0); cx.stroke(); const m = ((s.a0 + s.a1) / 2 - 0.25) * 2 * Math.PI; picto(cx, KIND_PIC[s.id], cxp + Math.cos(m) * (R0 + 0) * 0.93, cyp + Math.sin(m) * R0 * 0.93, 6, 'rgba(225,232,240,0.85)'); });
-    if (d.shape.like) { cx.fillStyle = 'rgba(240,245,250,0.9)'; cx.font = '600 15px system-ui'; cx.textAlign = 'center'; cx.fillText('Ω形', cxp, cyp + 5); cx.textAlign = 'left'; }
-  }
 
   // ======== Stage 6: the circular dish (dish2.js / dishview.js). The view state is plain UI state; nothing here changes the simulation. ========
   const DV = OmegaDishView, dview = DV.newView(); let dvGame = null, d2K = -1, d2V = null, gaugeStyle = 'needle', abilOpen = null, legendOpen = false;
@@ -1083,6 +1024,25 @@
   function drawDish2() {
     const [W, H2] = fit(cv, cx), d = dish2Now(); if (!d) return; dview.sel = selLin(); DV.draw(cx, W, H2, d, dview); drawDishPanel(d);
   }
+  // Pointer handling shared by the dish and the phylogeny: one finger drags, two fingers pinch, a short still touch is a tap, the wheel zooms (desktop).
+  // opts: enabled() -> bool, onTap(x, y, rect), redraw(), maxZoom, panLimit(view) -> number, settle (pull the view back to the centre at zoom 1)
+  function bindPanZoom(c, view, opts) {
+    const ptr = new Map(), maxZoom = opts.maxZoom || 8, enabled = opts.enabled || (() => true); let tap = null, pinch = null;
+    const local = (e) => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const clampPan = () => { const lim = opts.panLimit(view); view.px = Math.max(-lim, Math.min(lim, view.px)); view.py = Math.max(-lim, Math.min(lim, view.py)); if (opts.settle && view.zoom <= 1.001) { view.px *= 0.9; view.py *= 0.9; } };
+    c.style.touchAction = 'none';
+    c.addEventListener('pointerdown', (e) => { if (!enabled()) return; c.setPointerCapture(e.pointerId); ptr.set(e.pointerId, local(e)); if (ptr.size === 1) tap = { ...local(e), t: performance.now(), moved: 0 }; else { tap = null; const [p, q] = [...ptr.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), z: view.zoom }; } });
+    c.addEventListener('pointermove', (e) => {
+      if (!enabled() || !ptr.has(e.pointerId)) return; const prev = ptr.get(e.pointerId), cur = local(e); ptr.set(e.pointerId, cur); const r = c.getBoundingClientRect(), R0 = Math.min(r.width, r.height) / 2 - 6;
+      if (ptr.size === 1) { view.px += (cur.x - prev.x) / R0; view.py += (cur.y - prev.y) / R0; if (tap) tap.moved += Math.hypot(cur.x - prev.x, cur.y - prev.y); }
+      else if (ptr.size === 2 && pinch) { const [p, q] = [...ptr.values()]; view.zoom = Math.max(1, Math.min(maxZoom, pinch.z * Math.hypot(p.x - q.x, p.y - q.y) / Math.max(1, pinch.d))); }
+      clampPan(); opts.redraw();
+    });
+    const up = (e) => { if (!enabled()) return; const was = ptr.has(e.pointerId); ptr.delete(e.pointerId); if (ptr.size < 2) pinch = null; if (was && tap && ptr.size === 0 && tap.moved < 8 && performance.now() - tap.t < 600) opts.onTap(tap.x, tap.y, c.getBoundingClientRect()); if (ptr.size === 0) tap = null; };
+    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+    c.addEventListener('wheel', (e) => { if (!enabled()) return; e.preventDefault(); view.zoom = Math.max(1, Math.min(maxZoom, view.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); opts.redraw(); }, { passive: false });
+  }
+  bindPanZoom(cv, dview, { enabled: S4, maxZoom: 8, panLimit: (v) => v.zoom, settle: true, redraw: () => { if (!playing || dview.zoom > 1) draw(false); else drawDish2(); }, onTap: (x, y, r) => { const d = dish2Now(), h = d ? DV.hit(r.width, r.height, d, dview, x, y) : null; setSel(h ? h.lin : null); } });
   const ICONS = { tolerance: '🛡️', metabolism: '🔥', repairRate: '🩹', dormancyDepth: '💤', predation: '🦷', movement: '👣', immune: '🧪', fecundity: '🥚' };
   function gaugeSvg(v) {
     const x = Math.max(0, Math.min(1, v));
@@ -1114,27 +1074,6 @@
     el.querySelectorAll('[data-da]').forEach((b) => { b.onclick = () => { abilOpen = abilOpen === b.dataset.da ? null : b.dataset.da; dpKey = ''; draw(true); }; });
     el.querySelectorAll('[data-dact]').forEach((b) => { b.onclick = () => { const a = b.dataset.dact; if (a === 'reset') { Object.assign(dview, { zoom: 1, px: 0, py: 0 }); } else if (a === 'legend') legendOpen = !legendOpen; else if (a === 'desel') { game.sel = null; abilOpen = null; } else if (a === 'tree' || a === 'codon') { const t = document.querySelector(`#tabs [data-tab=${a === 'tree' ? 'phylo' : 'codon'}]`); if (t) t.click(); } dpKey = ''; draw(true); }; });
   }
-  // pan / pinch / tap on the dish
-  (function dishPointers() {
-    const ptr = new Map(); let tapStart = null, pinch = null;
-    const cssSize = () => { const r = cv.getBoundingClientRect(); return [r.width, r.height]; };
-    const local = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-    cv.addEventListener('pointerdown', (e) => { if (!S4()) return; cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, local(e)); if (ptr.size === 1) tapStart = { ...local(e), t: performance.now(), moved: 0 }; else { tapStart = null; const [a, b] = [...ptr.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: dview.zoom }; } });
-    cv.addEventListener('pointermove', (e) => {
-      if (!S4() || !ptr.has(e.pointerId)) return; const prev = ptr.get(e.pointerId), cur = local(e); ptr.set(e.pointerId, cur); const [W, H2] = cssSize(), R0 = Math.min(W, H2) / 2 - 6;
-      if (ptr.size === 1) { dview.px += (cur.x - prev.x) / R0; dview.py += (cur.y - prev.y) / R0; if (tapStart) tapStart.moved += Math.hypot(cur.x - prev.x, cur.y - prev.y); }
-      else if (ptr.size === 2 && pinch) { const [a, b] = [...ptr.values()]; const dd = Math.hypot(a.x - b.x, a.y - b.y); dview.zoom = Math.max(1, Math.min(8, pinch.z * dd / Math.max(1, pinch.d))); }
-      const lim = dview.zoom; dview.px = Math.max(-lim, Math.min(lim, dview.px)); dview.py = Math.max(-lim, Math.min(lim, dview.py)); if (dview.zoom <= 1.001) { dview.px *= 0.9; dview.py *= 0.9; }
-      if (!playing || dview.zoom > 1) draw(false); else drawDish2();
-    });
-    const up = (e) => {
-      if (!S4()) return; const was = ptr.has(e.pointerId); ptr.delete(e.pointerId); if (ptr.size < 2) pinch = null;
-      if (was && tapStart && ptr.size === 0 && tapStart.moved < 8 && performance.now() - tapStart.t < 600) { const [W, H2] = cssSize(), d = dish2Now(); const h = d ? DV.hit(W, H2, d, dview, tapStart.x, tapStart.y) : null; setSel(h ? h.lin : null); }
-      if (ptr.size === 0) tapStart = null;
-    };
-    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-    cv.addEventListener('wheel', (e) => { if (!S4()) return; e.preventDefault(); dview.zoom = Math.max(1, Math.min(8, dview.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); draw(false); }, { passive: false });
-  })();
   function updateMapCap() { const el = $('mapcap'); if (el) el.textContent = S4() ? 'タップで系統を選択／ピンチで拡大・ドラッグで移動／左＝陸 右＝水／半径＝圧力／上＝低温 下＝高温' : '円の大きさ＝環境支配力（個体数ではない）／点線＝参考の道筋'; }
   // ---- the achievement card ----
   const ACH_ICON = { codex: '◇', feat: '△', heritage: '⌬', omega: 'Ω' };
@@ -1177,20 +1116,8 @@
   }
   const presentY = () => { const wi = game.worldInfo(); return wi && wi.presentYears ? wi.presentYears : 0; };
   // ---- 系統樹: a fan, time from the centre outwards ----
-  let phyloSel = null; const phyloGeom = [];
   // ======== Stage 6: the phylogeny in three layouts (phylotree.js), tied to the dish and the codon screen by the lineage id (game.sel) ========
   const PT = OmegaPhyloTree, tview = PT.newView(); let tviewGame = null, tLay = null, tLayKey = '', tPtrBound = false, tInfoKey = '';
-  function bindPanZoom(c, view, onTap, redraw, cssOk) {
-    const ptr = new Map(); let tap = null, pinch = null; const local = (e) => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-    c.style.touchAction = 'none';
-    c.addEventListener('pointerdown', (e) => { c.setPointerCapture(e.pointerId); ptr.set(e.pointerId, local(e)); if (ptr.size === 1) tap = { ...local(e), t: performance.now(), moved: 0 }; else { tap = null; const [p, q] = [...ptr.values()]; pinch = { d: Math.hypot(p.x - q.x, p.y - q.y), z: view.zoom }; } });
-    c.addEventListener('pointermove', (e) => { if (!ptr.has(e.pointerId)) return; const prev = ptr.get(e.pointerId), cur = local(e); ptr.set(e.pointerId, cur); const r = c.getBoundingClientRect(), R0 = Math.min(r.width, r.height) / 2;
-      if (ptr.size === 1) { view.px += (cur.x - prev.x) / R0; view.py += (cur.y - prev.y) / R0; if (tap) tap.moved += Math.hypot(cur.x - prev.x, cur.y - prev.y); } else if (ptr.size === 2 && pinch) { const [p, q] = [...ptr.values()]; view.zoom = Math.max(1, Math.min(10, pinch.z * Math.hypot(p.x - q.x, p.y - q.y) / Math.max(1, pinch.d))); }
-      const lim = view.zoom + 0.5; view.px = Math.max(-lim, Math.min(lim, view.px)); view.py = Math.max(-lim, Math.min(lim, view.py)); redraw(); });
-    const up = (e) => { const was = ptr.has(e.pointerId); ptr.delete(e.pointerId); if (ptr.size < 2) pinch = null; if (was && tap && ptr.size === 0 && tap.moved < 8 && performance.now() - tap.t < 600) onTap(tap.x, tap.y, c.getBoundingClientRect()); if (ptr.size === 0) tap = null; };
-    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
-    c.addEventListener('wheel', (e) => { e.preventDefault(); view.zoom = Math.max(1, Math.min(10, view.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); redraw(); }, { passive: false });
-  }
   function drawPhyloTab() {
     const el = $('tab-phylo'); if (!game || !S4()) return;
     if (tviewGame !== game) { tviewGame = game; tview.collapsed = new Set(); tview.selNode = null; el.innerHTML = ''; tPtrBound = false; tLayKey = ''; }
@@ -1209,7 +1136,7 @@
     $('pt-modes').querySelectorAll('[data-pl]').forEach((b) => { b.onclick = () => { tview.limit = tview.limit > 160 ? 160 : 600; tLayKey = ''; drawPhyloTab(); }; });
     $('pt-modes').querySelectorAll('[data-pr]').forEach((b) => { b.onclick = () => { Object.assign(tview, { zoom: 1, px: 0, py: 0 }); tLayKey = ''; drawPhyloTab(); }; });
     $('pt-acts').querySelectorAll('[data-pa]').forEach((b) => { b.onclick = () => { const a = b.dataset.pa; if (a === 'fold') { const l = L.lin; if (tview.collapsed.has(l)) tview.collapsed.delete(l); else tview.collapsed.add(l); tLayKey = ''; drawPhyloTab(); } else { const t = document.querySelector(`#tabs [data-tab=${a === 'dish' ? 'world' : 'codon'}]`); if (a === 'dish') { const w = $('world'); if (w) w.scrollIntoView({ block: 'center' }); } else if (t) t.click(); } }; });
-    if (!tPtrBound) { tPtrBound = true; bindPanZoom(c, tview, (x, y, r) => { if (!tLay) return; const h = PT.hit(r.width, r.height, tLay, tview, x, y); if (!h) { game.sel = null; tview.selNode = null; } else { game.sel = game.creatures[h.lin].id; tview.selNode = h.type === 'node' ? h.id : null; } tLayKey = ''; drawPhyloTab(); }, () => { tLayKey = ''; drawPhyloTab(); }); }
+    if (!tPtrBound) { tPtrBound = true; bindPanZoom(c, tview, { maxZoom: 10, panLimit: (v) => v.zoom + 0.5, redraw: () => { tLayKey = ''; drawPhyloTab(); }, onTap: (x, y, r) => { if (!tLay) return; const h = PT.hit(r.width, r.height, tLay, tview, x, y); if (!h) { game.sel = null; tview.selNode = null; } else { game.sel = game.creatures[h.lin].id; tview.selNode = h.type === 'node' ? h.id : null; } tLayKey = ''; drawPhyloTab(); } }); }
   }
   // ---- コドン ----
   let codonExpand = false; const CODON_COL = { tolerance: '#c9786e', metabolism: '#d9a35f', repairRate: '#7fb89a', dormancyDepth: '#7fb8c4', predation: '#a98cd6', movement: '#6f9fe0', immune: '#d4c46a', fecundity: '#d98fb0' };
@@ -1264,7 +1191,6 @@
       <div class="note"><b>遺産と図鑑</b>：すべて実際の進化の記録です。能力を与えることはできません。遺産は、絶えた系統の遺伝子の断片が拾われることがあるというだけで、失敗や消失があります。</div>
       <div class="note"><b>仮定</b>：頻度・重み・基準値の多くはゲーム上の仮定で、科学的に実証したものではありません。詳細は設計記録にあります。</div>`;
   }
-  const dishRefresh = () => { if (S4()) drawDish2(); };
 
   let lastTabT = -999, tkN = -1, stratKey = '', linKey = '', rsT = -999;
   function draw(force) {
