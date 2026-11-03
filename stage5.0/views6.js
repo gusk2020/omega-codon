@@ -71,8 +71,9 @@
       const el = $('tab-phylo'); if (!env.game() || !S4()) return;
       if (tviewGame !== env.game()) { tviewGame = env.game(); tview.collapsed = new Set(); tview.selNode = null; el.innerHTML = ''; tPtrBound = false; tLayKey = ''; }
       if (!el.firstChild) el.innerHTML = '<div class="dp-row" id="pt-modes"></div><canvas id="fan" width="360" height="360"></canvas><div id="fan-note" class="note"></div><div id="pt-detail"></div><div class="dp-row" id="pt-acts"></div><div id="pt-legend" class="dp-legend"></div>';
-      const c = $('fan'), p = env.game().phylo(tview.limit); if (!p) return; const sl = env.game().sel ? env.game().creatures.findIndex((q) => q.id === env.game().sel) : -1; tview.selLin = sl < 0 ? null : sl;
-      const key = [env.game().t, tview.mode, tview.limit, [...tview.collapsed].join(','), tview.selLin, tview.selNode].join('|'); if (key === tLayKey && c.width) return; tLayKey = key;
+      const c = $('fan'), sl = selLin(); tview.selLin = sl;
+      const key = [env.game().t, tview.mode, tview.limit, [...tview.collapsed].join(','), tview.selLin, tview.selNode].join('|'); if (key === tLayKey && c.width) return; // nothing changed since the last drawing: skip the work
+      const p = env.game().phylo(tview.limit); if (!p) return; tLayKey = key;
       const Wc = c.clientWidth || 360, Hc = tview.mode === 'rect' ? Math.round(Wc * 0.9) : Wc; if (c.style.height !== Hc + 'px') c.style.height = Hc + 'px'; const dpr = Math.min(2, window.devicePixelRatio || 1); c.width = Math.round(Wc * dpr); c.height = Math.round(Hc * dpr); const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       tLay = PT.layout(p, tview.mode, { collapsed: tview.collapsed }); PT.draw(ctx, Wc, Hc, tLay, tview, p, p.roots.map((r) => r.color));
       $('pt-modes').innerHTML = [['circle', '円形'], ['fan', '放射状'], ['rect', '矩形']].map(([m, t]) => `<button class="chip${tview.mode === m ? ' on' : ''}" data-pm="${m}">${t}</button>`).join('') + `<button class="chip${tview.limit > 160 ? ' on' : ''}" data-pl="1">${tview.limit > 160 ? '記録すべて' : '主な160'}</button><button class="chip" data-pr="1">表示を戻す</button>`;

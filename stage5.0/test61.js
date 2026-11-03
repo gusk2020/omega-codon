@@ -2,12 +2,9 @@
 // Behaviour guard for refactoring (Stage 6.1). Plays three seeds and compares fingerprints of everything the screens read against values recorded before the refactor
 // (baseline-s6.json). A refactor must leave every fingerprint unchanged. If the simulation is changed ON PURPOSE, regenerate with:  node test61.js --update
 const assert = require('node:assert/strict'), fs = require('node:fs'), crypto = require('node:crypto'), path = require('node:path');
-const E = require('./engine19'), G = require('./game');
+const { E, G, newPlayGame: mk, cont, runTo } = require('./testlib');
 const FILE = path.join(__dirname, 'baseline-s6.json'), UPDATE = process.argv.includes('--update');
 const md5 = (x) => crypto.createHash('md5').update(JSON.stringify(x, (k, v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v))).digest('hex').slice(0, 12);
-const mk = (seed) => { const g = G.newGame(E, { creatures: ['standard'], rivals: [], seed, realms: true, scenario: 'free', ecology: 'v2', time: 'adaptive', stage: 4 }); g.setAutoContinuous(true); return g; };
-const cont = (g) => { if (g.checkpoint) g.continueFromCheckpoint(); };
-const runTo = (g, t) => { let n = 0; while (g.t < t && !g.isOver && n++ < 4000) { g.advance(250); cont(g); } };
 function fingerprint(g) {
   const st = g.live.stats(), d = g.dish2(), p = g.phylo(1e9), wi = g.worldInfo(), alive = d.lineages.find((l) => l.alive > 0);
   return {
