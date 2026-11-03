@@ -35,6 +35,9 @@
 
   // a big button appended to a modal card; the class list keeps the order the screens always used ('btn' + classes + 'big')
   const cardButton = (card, text, onclick, cls) => { const b = document.createElement('button'); b.className = 'btn big ' + (cls || ''); b.textContent = text; b.onclick = onclick; card.appendChild(b); };
+  // DOM writes only when the text or markup really changed (the page is redrawn many times a second; an unchanged write still costs layout and replaces the nodes under a finger)
+  const setText = (el, text) => { if (el.textContent !== text) el.textContent = text; };
+  const setHtml = (el, html) => { if (el._html === html) return false; el._html = html; el.innerHTML = html; return true; };
   // Stage 6: the same compact world summary on every save screen (slot list, before saving, load confirmation, right after loading)
   const fmtTs = (ts) => { try { return new Date(ts).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
   function renderSummary(s, extra) {
@@ -897,13 +900,12 @@
     const wi = game.worldInfo(), rk = game.rank, cur = rk.current, best = rk.best;
     // Stage 5.2: the clock is written to the 10,000-year digit, and a big jump is announced for a few seconds (display only)
     { const nowMs = performance.now(); if (hudPrevY === null || wi.years < hudPrevY) { hudPrevY = wi.years; hudJump = 0; } else if (wi.years - hudPrevY >= 1e6) { hudJump += wi.years - hudPrevY; hudJumpUntil = nowMs + 5000; } hudPrevY = wi.years; if (nowMs > hudJumpUntil) hudJump = 0;
-      $('hud-era').textContent = wi.bpText; $('hud-sub').textContent = `開始から ${wi.elapsedText}${hudJump > 0 ? `　⏩ +${G.jaYears(hudJump)}` : ''}`; }
-    $('hud-rank').innerHTML = `<span class="rk">${cur ? cur.rank : '？'}</span><small>最高 <b>${best ? best.rank : 'なし'}</b></small>`;
+      setText($('hud-era'), wi.bpText); setText($('hud-sub'), `開始から ${wi.elapsedText}${hudJump > 0 ? `　⏩ +${G.jaYears(hudJump)}` : ''}`); }
+    setHtml($('hud-rank'), `<span class="rk">${cur ? cur.rank : '？'}</span><small>最高 <b>${best ? best.rank : 'なし'}</b></small>`);
     const th = game.threat(), lv = th ? ['安全', '注意', '危険', '非常に危険'][th.level] : null, col = th ? ['#46c28a', '#f2d13d', '#f2a03d', '#e5586e'][th.level] : null;
     const thr = th ? `<span class="hchip" style="border-color:${col};color:${col}">${S4() ? '●' : ['🟢', '🟡', '🟠', '🔴'][th.level]} ${lv}</span>` : '';
     const civ = wi.civ ? `<span class="hchip">${S4() ? '文明' : '🏛'} ${wi.civ.stage}</span>` : '';
-    $('hud2').innerHTML = thr + civ + catBannerChips();
-    document.querySelectorAll('#hud2 [data-cat]').forEach((e) => { e.onclick = () => openCatDetail(); }); document.querySelectorAll('#hud2 [data-off]').forEach((e) => { e.onclick = () => openOffworld(); });
+    if (setHtml($('hud2'), thr + civ + catBannerChips())) { document.querySelectorAll('#hud2 [data-cat]').forEach((e) => { e.onclick = () => openCatDetail(); }); document.querySelectorAll('#hud2 [data-off]').forEach((e) => { e.onclick = () => openOffworld(); }); }
   }
   function drawRankStrip31() {
     const el = $('rankstrip'); if (!el) return; const c = game.rankChecklist();
@@ -1066,7 +1068,7 @@
   const DETAIL_SUBS = [['stat', '状況'], ['ind', '個体'], ['trait', '形質'], ['graph', '推移'], ['env', '生息域'], ['world', '世界'], ['rank', 'ランク'], ['about', '説明']];
   const DETAIL_SET = new Set(DETAIL_SUBS.map((x) => x[0])); let detailSub = 'stat';
   let navKey = '';
-  function drawDetailNav() { const el = $('detailnav'); el.hidden = !(S4() && DETAIL_SET.has(tab)); if (el.hidden) { navKey = ''; return; } if (navKey === tab) return; navKey = tab; /* rebuilt only when the tab changes: a button that is replaced between touch-down and touch-up cannot be tapped */ el.innerHTML = DETAIL_SUBS.map(([k, n]) => `<button class="chip${tab === k ? ' on' : ''}" data-k="${k}">${n}</button>`).join(''); el.querySelectorAll('.chip').forEach((b) => { b.onclick = () => { detailSub = b.dataset.k; setTab(detailSub); }; }); }
+  function drawDetailNav() { const el = $('detailnav'), hide = !(S4() && DETAIL_SET.has(tab)); if (el.hidden !== hide) el.hidden = hide; if (el.hidden) { navKey = ''; return; } if (navKey === tab) return; navKey = tab; /* rebuilt only when the tab changes: a button that is replaced between touch-down and touch-up cannot be tapped */ el.innerHTML = DETAIL_SUBS.map(([k, n]) => `<button class="chip${tab === k ? ' on' : ''}" data-k="${k}">${n}</button>`).join(''); el.querySelectorAll('.chip').forEach((b) => { b.onclick = () => { detailSub = b.dataset.k; setTab(detailSub); }; }); }
   function setTab(t) { tab = t; const nav = document.querySelector('#tabs'); nav.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.tab === t || (x.dataset.tab === 'detail' && DETAIL_SET.has(t) && S4()))); for (const id of ['world', 'stat', 'ind', 'rank', 'trait', 'graph', 'env', 'log', 'codex', 'phylo', 'codon', 'feats', 'about']) { const e = $('tab-' + id); if (e) e.hidden = id !== t; } drawDetailNav(); draw(true); }
   function drawAbout() {
     $('tab-about').innerHTML = `<div class="note"><b>時間のしくみ</b>：1ステップ＝30日とみなします。世界の時計（年）は、計算したステップと、跳躍（世界のモデルだけを進める）で進みます。跳躍のあと、実際の世代の代わりに最大240ステップだけ、突然変異を2倍にして計算します（近似）。省略した世代は進化として数えません。</div>

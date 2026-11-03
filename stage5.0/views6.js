@@ -41,11 +41,16 @@
       const ang = (-90 + 180 * x) * Math.PI / 180, nx = 20 + 14 * Math.sin(ang), ny = 24 - 14 * Math.cos(ang);
       return `<svg viewBox="0 0 40 28" width="44" height="30" aria-hidden="true"><path d="M4 24 A16 16 0 0 1 36 24" fill="none" stroke="#2c3b4a" stroke-width="4"/><path d="M4 24 A16 16 0 0 1 36 24" fill="none" stroke="#6fd3a0" stroke-width="4" stroke-dasharray="${(50.3 * x).toFixed(1)} 60"/><line x1="20" y1="24" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#e8eef5" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="24" r="2.2" fill="#e8eef5"/></svg>`;
     }
-    let dpKey = '';
+    let dpChoice = '', dpBuiltAt = 0, dpHtml = '', dpTouching = false; // see drawDishPanel
+    { const pn = $('dishpanel'); if (pn) { pn.addEventListener('pointerdown', () => { dpTouching = true; }); for (const ev of ['pointerup', 'pointercancel']) window.addEventListener(ev, () => { dpTouching = false; }); } }
     function drawDishPanel(d) {
-      const el = $('dishpanel'); if (!el) return; el.hidden = false;
-      const sl = selLin(), L = sl === null ? null : d.lineages.find((l) => l.lin === sl), ab = L ? env.game().abilities(sl) : null, rk = L ? env.game().rank.byLin[sl] : null;
-      const key = [env.game().t, sl, dview.mode, gaugeStyle, abilOpen, legendOpen].join('|'); if (key === dpKey) return; dpKey = key;
+      const el = $('dishpanel'); if (!el) return; if (el.hidden) el.hidden = false;
+      // The panel is rebuilt at once when what the player chose changes (selection, mode, gauge style, opened detail, legend). Otherwise only its numbers move, so it is rebuilt at most twice a
+      // second and never while a finger is on it: a button replaced between touch-down and touch-up would lose the tap (at x600 the numbers change every few frames).
+      const sl = selLin(), choice = [sl, dview.mode, gaugeStyle, abilOpen, legendOpen].join('|'), now = performance.now();
+      if (choice === dpChoice && (dpTouching || now - dpBuiltAt < 500)) return;
+      const L = sl === null ? null : d.lineages.find((l) => l.lin === sl), ab = L ? env.game().abilities(sl) : null, rk = L ? env.game().rank.byLin[sl] : null;
+      dpChoice = choice; dpBuiltAt = now;
       const aliveN = L ? L.beads.filter((b) => b.alive).length : 0, vac = L ? L.beads.length - aliveN : 0;
       let h = `<div class="dp-row"><button class="chip${dview.mode === 'path' ? ' on' : ''}" data-dm="path">進化経路</button><button class="chip${dview.mode === 'territory' ? ' on' : ''}" data-dm="territory">勢力圏</button><button class="chip" data-dact="reset">表示を戻す</button><button class="chip${legendOpen ? ' on' : ''}" data-dact="legend">凡例</button></div>`;
       if (legendOpen) h += '<div class="dp-legend">' + DV.LEGEND.map(([k, t]) => `<div><b>${k}</b><span>${t}</span></div>`).join('') + `<div><b>注意</b><span>${d.sources.land}</span></div><div><b>注意</b><span>${d.sources.civ}</span></div><div><b>代理</b><span>${d.sources.influence}</span></div><div><b>表示</b><span>未来が遠いほど枝を少し広げて描きます（見やすくするための表示で、計算結果は変えません）。絶滅した系統で、場所の記録がないものは、記録開始前に絶えたためです。</span></div></div>`;
@@ -58,12 +63,12 @@
         if (ab) { h += '<div class="abil">' + ab.items.map((i) => `<button class="tile${abilOpen === i.id ? ' open' : ''}" data-da="${i.id}"><span class="ic">${ICONS[i.id] || '・'}</span>${gaugeSvg(i.value)}<small>${i.name}</small></button>`).join('') + '</div>'; const op = ab.items.find((i) => i.id === abilOpen); if (op) h += `<div class="abil-d"><b>${ICONS[op.id]} ${op.name}　${Math.round(op.value * 100)}%</b><span>${op.text}。${ab.note}</span></div>`; else h += '<div class="abil-d dim">能力をタップすると詳しい説明が出ます。</div>'; }
         else h += '<div class="abil-d dim">この系統は現存しないため、能力は表示できません。</div>';
       }
-      el.innerHTML = h;
-      el.querySelectorAll('[data-dm]').forEach((b) => { b.onclick = () => { dview.mode = b.dataset.dm; dpKey = ''; env.draw(true); }; });
+      if (h !== dpHtml) { dpHtml = h; el.innerHTML = h; } else return;
+      el.querySelectorAll('[data-dm]').forEach((b) => { b.onclick = () => { dview.mode = b.dataset.dm; dpChoice = ''; env.draw(true); }; });
       el.querySelectorAll('[data-dl]').forEach((b) => { b.onclick = () => setSel(Number(b.dataset.dl)); });
-      el.querySelectorAll('[data-dg]').forEach((b) => { b.onclick = () => { gaugeStyle = b.dataset.dg; dpKey = ''; env.draw(true); }; });
-      el.querySelectorAll('[data-da]').forEach((b) => { b.onclick = () => { abilOpen = abilOpen === b.dataset.da ? null : b.dataset.da; dpKey = ''; env.draw(true); }; });
-      el.querySelectorAll('[data-dact]').forEach((b) => { b.onclick = () => { const a = b.dataset.dact; if (a === 'reset') { Object.assign(dview, { zoom: 1, px: 0, py: 0 }); } else if (a === 'legend') legendOpen = !legendOpen; else if (a === 'desel') { env.game().sel = null; abilOpen = null; } else if (a === 'tree' || a === 'codon') { const t = document.querySelector(`#tabs [data-tab=${a === 'tree' ? 'phylo' : 'codon'}]`); if (t) t.click(); } dpKey = ''; env.draw(true); }; });
+      el.querySelectorAll('[data-dg]').forEach((b) => { b.onclick = () => { gaugeStyle = b.dataset.dg; dpChoice = ''; env.draw(true); }; });
+      el.querySelectorAll('[data-da]').forEach((b) => { b.onclick = () => { abilOpen = abilOpen === b.dataset.da ? null : b.dataset.da; dpChoice = ''; env.draw(true); }; });
+      el.querySelectorAll('[data-dact]').forEach((b) => { b.onclick = () => { const a = b.dataset.dact; if (a === 'reset') { Object.assign(dview, { zoom: 1, px: 0, py: 0 }); } else if (a === 'legend') legendOpen = !legendOpen; else if (a === 'desel') { env.game().sel = null; abilOpen = null; } else if (a === 'tree' || a === 'codon') { const t = document.querySelector(`#tabs [data-tab=${a === 'tree' ? 'phylo' : 'codon'}]`); if (t) t.click(); } dpChoice = ''; env.draw(true); }; });
     }
     // ======== Stage 6: the phylogeny in three layouts (phylotree.js), tied to the dish and the codon screen by the lineage id (env.game().sel) ========
     const PT = OmegaPhyloTree, tview = PT.newView(); let tviewGame = null, tLay = null, tLayKey = '', tPtrBound = false, tInfoKey = '';
@@ -128,7 +133,7 @@
         $('cx-events').querySelectorAll('[data-ev]').forEach((b) => { b.onclick = () => { const id = Number(b.dataset.ev); tview.selNode = tview.selNode === id ? null : id; tLayKey = ''; drawCodonTab(); }; }); }
       if (info.series.length) { const sc = $('codon-ser'), ctx2 = sc.getContext('2d'), n = info.series.length, mx = Math.max(...info.series.map((x) => Math.max(x.Lp, x.info))) * 1.1 || 1; ctx2.clearRect(0, 0, 320, 90); for (const [key, dash, col] of [['Lp', [], '#8fb4d8'], ['info', [3, 3], '#c9d6a0']]) { ctx2.strokeStyle = col; ctx2.setLineDash(dash); ctx2.beginPath(); info.series.forEach((x, i) => { const px = n === 1 ? 160 : (i / (n - 1)) * 316 + 2, py = 86 - (x[key] / mx) * 80; if (i === 0) ctx2.moveTo(px, py); else ctx2.lineTo(px, py); }); ctx2.stroke(); } ctx2.setLineDash([]); }
     }
-    return { drawDish2, drawPhyloTab, drawCodonTab, resetDishPanel: () => { dpKey = ''; } };
+    return { drawDish2, drawPhyloTab, drawCodonTab, resetDishPanel: () => { dpChoice = ''; dpHtml = ''; } };
   }
   return { create };
 });
